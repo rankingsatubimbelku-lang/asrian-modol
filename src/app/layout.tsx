@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist } from "next/font/google"
 import "./globals.css"
 import { SessionProvider } from "@/components/layout/SessionProvider"
+import { ThemeProvider } from "@/components/layout/ThemeProvider"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 
@@ -18,9 +19,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body className={`${geist.variable} font-sans antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

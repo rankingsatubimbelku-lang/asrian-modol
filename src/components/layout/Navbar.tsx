@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { logoutAction } from "@/actions/auth.actions"
+import { ThemeToggle } from "./ThemeToggle"
 
 const roleBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
   SUPER_ADMIN: { label: "Super Admin", variant: "destructive" },
@@ -45,7 +46,8 @@ export function Navbar({ email, role, onMenuClick }: NavbarProps) {
       <div className="hidden lg:block" />
 
       {/* Right: notif + user */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5 text-gray-500" />
         </Button>

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { formatDate, formatCurrency } from "@/lib/format"
+import { LaporanArisanExport } from "@/components/shared/LaporanArisanExport"
 
 export default async function LaporanArisanPage() {
   await requireAuth()
@@ -61,7 +62,10 @@ export default async function LaporanArisanPage() {
         {/* Daftar pemenang */}
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-5">
-            <h3 className="font-semibold text-gray-800 text-sm mb-4">Daftar Pemenang Terbaru</h3>
+            <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-800 text-sm">Daftar Pemenang Terbaru</h3>
+            <LaporanArisanExport winners={winners} />
+          </div>
             {winners.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">Belum ada hasil undian</p>
             ) : (

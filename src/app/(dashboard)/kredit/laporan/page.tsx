@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { StatusBadge } from "@/components/shared/StatusBadge"
+import { LaporanKreditExport } from "@/components/shared/LaporanKreditExport"
 import { formatCurrency } from "@/lib/format"
 
 export default async function LaporanKreditPage() {
@@ -63,7 +64,10 @@ export default async function LaporanKreditPage() {
 
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Semua Kredit</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">Semua Kredit</h3>
+              <LaporanKreditExport loans={recentLoans} />
+            </div>
             <div className="space-y-2">
               {recentLoans.map(l => (
                 <div key={l.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  ANGGOTA
+}
+
+enum MemberStatus {
+  AKTIF
+  NONAKTIF
+}
+
+enum ArisanPeriodStatus {
+  DRAFT
+  AKTIF
+  SELESAI
+}
+
+enum PaymentStatus {
+  LUNAS
+  MENUNGGAK
+}
+
+enum SavingTransactionType {
+  SETORAN
+  PENARIKAN
+  BUNGA
+}
+
+enum InterestPeriode {
+  BULANAN
+  TAHUNAN
+}
+
+enum LoanInterestMethod {
+  FLAT
+  EFEKTIF
+}
+
+enum LoanStatus {
+  DRAFT
+  MENUNGGU_PERSETUJUAN
+  DISETUJUI
+  DITOLAK
+  LUNAS
+}
+
+enum InstallmentStatus {
+  BELUM_BAYAR
+  LUNAS
+  TERLAMBAT
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(ANGGOTA)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  member           Member?
+  createdArisans   ArisanPeriod[]
+  createdPayments  ArisanPayment[]
+  createdDraws     ArisanDraw[]
+  createdSavingTrx SavingsTransaction[]
+  createdLoans     Loan[]                  @relation("LoanCreatedBy")
+  approvedLoans    Loan[]                  @relation("LoanApprovedBy")
+  savingSettings   SavingsInterestSetting[]
+  loanSettings     LoanInterestSetting[]
+  events           Event[]
+  activityLogs     ActivityLog[]
+
+  @@map("users")
+}
+
+model Member {
+  id               String       @id @default(uuid())
+  userId           String       @unique @map("user_id")
+  nomorAnggota     String       @unique @map("nomor_anggota")
+  namaLengkap      String       @map("nama_lengkap")
+  nik              String       @unique
+  tempatLahir      String       @map("tempat_lahir")
+  tanggalLahir     DateTime     @map("tanggal_lahir") @db.Date
+  alamat           String
+  nomorHp          String       @map("nomor_hp")
+  tanggalBergabung DateTime     @map("tanggal_bergabung") @db.Date
+  status           MemberStatus @default(AKTIF)
+  fotoUrl          String?      @map("foto_url")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  user           User               @relation(fields: [userId], references: [id])
+  arisanMembers  ArisanMember[]
+  arisanPayments ArisanPayment[]
+  arisanWinners  ArisanWinner[]
+  saving         Saving?
+  loans          Loan[]
+
+  @@map("members")
+}
+
+model ArisanPeriod {
+  id                  String             @id @default(uuid())
+  namaPeriode         String             @map("nama_periode")
+  tanggalMulai        DateTime           @map("tanggal_mulai") @db.Date
+  tanggalSelesai      DateTime           @map("tanggal_selesai") @db.Date
+  besarIuran          Decimal            @map("besar_iuran") @db.Decimal(15, 2)
+  maxPemenangPerBulan Int                @map("max_pemenang_per_bulan")
+  status              ArisanPeriodStatus @default(DRAFT)
+  createdBy           String             @map("created_by")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+
+  creator        User            @relation(fields: [createdBy], references: [id])
+  arisanMembers  ArisanMember[]
+  arisanPayments ArisanPayment[]
+  arisanDraws    ArisanDraw[]
+
+  @@map("arisan_periods")
+}
+
+model ArisanMember {
+  id            String    @id @default(uuid())
+  periodId      String    @map("period_id")
+  memberId      String    @map("member_id")
+  sudahMenang   Boolean   @default(false) @map("sudah_menang")
+  tanggalMenang DateTime? @map("tanggal_menang") @db.Date
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  period ArisanPeriod @relation(fields: [periodId], references: [id])
+  member Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([periodId, memberId])
+  @@map("arisan_members")
+}
+
+model ArisanPayment {
+  id           String        @id @default(uuid())
+  periodId     String        @map("period_id")
+  memberId     String        @map("member_id")
+  bulan        String
+  nominal      Decimal       @db.Decimal(15, 2)
+  tanggalBayar DateTime      @map("tanggal_bayar") @db.Date
+  status       PaymentStatus @default(LUNAS)
+  createdBy    String        @map("created_by")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  period  ArisanPeriod @relation(fields: [periodId], references: [id])
+  member  Member       @relation(fields: [memberId], references: [id])
+  creator User         @relation(fields: [createdBy], references: [id])
+
+  @@map("arisan_payments")
+}
+
+model ArisanDraw {
+  id             String   @id @default(uuid())
+  periodId       String   @map("period_id")
+  bulanUndian    String   @map("bulan_undian")
+  tanggalUndian  DateTime @map("tanggal_undian") @db.Date
+  jumlahPemenang Int      @map("jumlah_pemenang")
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  period  ArisanPeriod   @relation(fields: [periodId], references: [id])
+  creator User           @relation(fields: [createdBy], references: [id])
+  winners ArisanWinner[]
+
+  @@map("arisan_draws")
+}
+
+model ArisanWinner {
+  id         String   @id @default(uuid())
+  drawId     String   @map("draw_id")
+  memberId   String   @map("member_id")
+  nominalHak Decimal  @map("nominal_hak") @db.Decimal(15, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  draw   ArisanDraw @relation(fields: [drawId], references: [id])
+  member Member     @relation(fields: [memberId], references: [id])
+
+  @@map("arisan_winners")
+}
+
+model SavingsInterestSetting {
+  id           String          @id @default(uuid())
+  persentase   Decimal         @db.Decimal(5, 2)
+  periode      InterestPeriode @default(TAHUNAN)
+  berlakuMulai DateTime        @map("berlaku_mulai") @db.Date
+  isActive     Boolean         @default(true) @map("is_active")
+  createdBy    String          @map("created_by")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  creator         User              @relation(fields: [createdBy], references: [id])
+  savingsInterest SavingsInterest[]
+
+  @@map("savings_interest_settings")
+}
+
+model Saving {
+  id        String   @id @default(uuid())
+  memberId  String   @unique @map("member_id")
+  saldo     Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  member       Member               @relation(fields: [memberId], references: [id])
+  transactions SavingsTransaction[]
+  interests    SavingsInterest[]
+
+  @@map("savings")
+}
+
+model SavingsTransaction {
+  id             String                @id @default(uuid())
+  nomorTransaksi String                @unique @map("nomor_transaksi")
+  savingId       String                @map("saving_id")
+  memberId       String                @map("member_id")
+  jenis          SavingTransactionType
+  nominal        Decimal               @db.Decimal(15, 2)
+  keterangan     String?
+  tanggal        DateTime              @db.Date
+  createdBy      String                @map("created_by")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  saving  Saving @relation(fields: [savingId], references: [id])
+  creator User   @relation(fields: [createdBy], references: [id])
+
+  @@map("savings_transactions")
+}
+
+model SavingsInterest {
+  id           String   @id @default(uuid())
+  savingId     String   @map("saving_id")
+  settingId    String   @map("setting_id")
+  nominalBunga Decimal  @map("nominal_bunga") @db.Decimal(15, 2)
+  periode      String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  saving  Saving                 @relation(fields: [savingId], references: [id])
+  setting SavingsInterestSetting @relation(fields: [settingId], references: [id])
+
+  @@map("savings_interest")
+}
+
+model LoanInterestSetting {
+  id           String             @id @default(uuid())
+  persentase   Decimal            @db.Decimal(5, 2)
+  metode       LoanInterestMethod @default(FLAT)
+  berlakuMulai DateTime           @map("berlaku_mulai") @db.Date
+  isActive     Boolean            @default(true) @map("is_active")
+  dendaPerHari Decimal            @map("denda_per_hari") @db.Decimal(5, 2)
+  createdBy    String             @map("created_by")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  creator User   @relation(fields: [createdBy], references: [id])
+  loans   Loan[]
+
+  @@map("loan_interest_settings")
+}
+
+model Loan {
+  id                String     @id @default(uuid())
+  nomorPengajuan    String     @unique @map("nomor_pengajuan")
+  memberId          String     @map("member_id")
+  nominalPinjaman   Decimal    @map("nominal_pinjaman") @db.Decimal(15, 2)
+  tenor             Int
+  tujuanPinjaman    String     @map("tujuan_pinjaman")
+  interestSettingId String     @map("interest_setting_id")
+  status            LoanStatus @default(DRAFT)
+  tanggalPengajuan  DateTime   @map("tanggal_pengajuan") @db.Date
+  tanggalDisetujui  DateTime?  @map("tanggal_disetujui") @db.Date
+  tanggalLunas      DateTime?  @map("tanggal_lunas") @db.Date
+  catatanApproval   String?    @map("catatan_approval")
+  approvedBy        String?    @map("approved_by")
+  createdBy         String     @map("created_by")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  member          Member              @relation(fields: [memberId], references: [id])
+  interestSetting LoanInterestSetting @relation(fields: [interestSettingId], references: [id])
+  approver        User?               @relation("LoanApprovedBy", fields: [approvedBy], references: [id])
+  creator         User                @relation("LoanCreatedBy", fields: [createdBy], references: [id])
+  installments    LoanInstallment[]
+
+  @@map("loans")
+}
+
+model LoanInstallment {
+  id               String            @id @default(uuid())
+  loanId           String            @map("loan_id")
+  ke               Int
+  tanggalJatuhTempo DateTime         @map("tanggal_jatuh_tempo") @db.Date
+  tanggalBayar     DateTime?         @map("tanggal_bayar") @db.Date
+  nominalPokok     Decimal           @map("nominal_pokok") @db.Decimal(15, 2)
+  nominalBunga     Decimal           @map("nominal_bunga") @db.Decimal(15, 2)
+  denda            Decimal           @default(0) @db.Decimal(15, 2)
+  status           InstallmentStatus @default(BELUM_BAYAR)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  loan Loan @relation(fields: [loanId], references: [id])
+
+  @@map("loan_installments")
+}
+
+model Event {
+  id           String   @id @default(uuid())
+  namaKegiatan String   @map("nama_kegiatan")
+  tanggal      DateTime @db.Date
+  lokasi       String
+  deskripsi    String?
+  pic          String
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("events")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  module    String
+  action    String
+  entityId  String?  @map("entity_id")
+  dataLama  Json?    @map("data_lama")
+  dataBaru  Json?    @map("data_baru")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}

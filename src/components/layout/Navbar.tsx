@@ -31,7 +31,7 @@ export function Navbar({ email, role, onMenuClick }: NavbarProps) {
   const badge = roleBadge[role] ?? roleBadge.ANGGOTA
 
   return (
-    <header className="h-14 bg-white border-b flex items-center justify-between px-4 sticky top-0 z-30">
+    <header className="h-14 bg-white dark:bg-gray-900 border-b dark:border-white/10 flex items-center justify-between px-4 sticky top-0 z-30">
       {/* Mobile hamburger */}
       <Button
         variant="ghost"

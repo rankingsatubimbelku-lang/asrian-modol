@@ -78,8 +78,9 @@ model User {
   createdPayments  ArisanPayment[]
   createdDraws     ArisanDraw[]
   createdSavingTrx SavingsTransaction[]
-  createdLoans     Loan[]                  @relation("LoanCreatedBy")
-  approvedLoans    Loan[]                  @relation("LoanApprovedBy")
+  postedSavingTrx  SavingsTransaction[]     @relation("PostedBy")
+  createdLoans     Loan[]                   @relation("LoanCreatedBy")
+  approvedLoans    Loan[]                   @relation("LoanApprovedBy")
   savingSettings   SavingsInterestSetting[]
   loanSettings     LoanInterestSetting[]
   events           Event[]

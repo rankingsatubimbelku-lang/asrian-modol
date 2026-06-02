@@ -111,16 +111,17 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
     ctx.fill()
     ctx.shadowBlur = 0
 
-    // Center text
+    // Center text — pakai spinningRef (bukan state) agar tidak trigger re-render
+    const isSpinning = spinningRef.current
     ctx.fillStyle = "#f8fafc"
-    ctx.font = `bold ${spinning ? 8 : 9}px ui-sans-serif, system-ui, sans-serif`
+    ctx.font = `bold 9px ui-sans-serif, system-ui, sans-serif`
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillText(spinning ? "..." : "KLIK", cx, cy - 5)
+    ctx.fillText(isSpinning ? "..." : "KLIK", cx, cy - 5)
     ctx.font = "7px ui-sans-serif, system-ui, sans-serif"
     ctx.fillStyle = "#94a3b8"
     ctx.fillText("PUTAR", cx, cy + 6)
-  }, [candidates, n, spinning])
+  }, [candidates, n])
 
   useEffect(() => {
     draw(rotationRef.current)

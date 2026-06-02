@@ -24,6 +24,7 @@ export async function inputTransaksiTabungan(formData: FormData) {
   const nominal = parseFloat(d.nominal)
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const saving = await prisma.saving.findUnique({ where: { memberId: d.memberId } })
     if (!saving) return { success: false, error: "Rekening tabungan tidak ditemukan" }
 

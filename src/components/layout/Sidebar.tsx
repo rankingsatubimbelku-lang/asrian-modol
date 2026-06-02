@@ -101,15 +101,15 @@ export function Sidebar({ role, onClose }: SidebarProps) {
   const filtered = navItems.filter((item) => item.roles.includes(role))
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b">
+      <div className="flex items-center gap-3 px-5 py-5 border-b dark:border-white/10">
         <div className="bg-blue-600 p-2 rounded-xl">
           <Wallet className="w-5 h-5 text-white" />
         </div>
         <div>
-          <p className="font-bold text-gray-800 text-sm leading-tight">Sistem Arisan</p>
-          <p className="text-xs text-gray-400">Keluarga</p>
+          <p className="font-bold text-gray-800 dark:text-gray-100 text-sm leading-tight">Sistem Arisan</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Keluarga</p>
         </div>
       </div>
 

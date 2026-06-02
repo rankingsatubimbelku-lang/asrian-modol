@@ -13,7 +13,7 @@ export default async function KreditPage() {
   const session = await requireAuth()
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role)
 
-  const loans = isAdmin
+  const loans = serialize(isAdmin
     ? await prisma.loan.findMany({
         include: {
           member: { select: { namaLengkap: true, nomorAnggota: true } },
@@ -30,7 +30,7 @@ export default async function KreditPage() {
           _count: { select: { installments: true } },
         },
         orderBy: { createdAt: "desc" },
-      })
+      }))
 
   type Loan = typeof loans[0]
 

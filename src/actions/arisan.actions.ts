@@ -228,8 +228,25 @@ export async function simpanHasilUndian(periodId: string, bulanUndian: string, w
     if (!arisanMember) return { success: false, error: "Anggota tidak eligible atau sudah pernah menang" }
 
     const periode = await prisma.arisanPeriod.findUnique({ where: { id: periodId } })
+    if (!periode) return { success: false, error: "Periode tidak ditemukan" }
+
+    const maxPemenang = periode.maxPemenangPerBulan
+
+    // Validasi: cek sudah berapa pemenang bulan ini
+    const pemenangBulanIni = await prisma.arisanWinner.count({
+      where: { draw: { periodId, bulanUndian } },
+    })
+    if (pemenangBulanIni >= maxPemenang) {
+      return {
+        success: false,
+        error: `Batas maksimal ${maxPemenang} pemenang untuk bulan ini sudah tercapai`,
+      }
+    }
+
+    // nominalHak = total iuran anggota ÷ jumlah max pemenang per bulan
     const totalAnggota = await prisma.arisanMember.count({ where: { periodId } })
-    const nominalHak = Number(periode?.besarIuran ?? 0) * totalAnggota
+    const totalDana = Number(periode.besarIuran) * totalAnggota
+    const nominalHak = Math.floor(totalDana / maxPemenang)
 
     await prisma.$transaction(async (tx) => {
       const draw = await tx.arisanDraw.create({

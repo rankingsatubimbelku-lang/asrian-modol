@@ -130,8 +130,8 @@ export function Sidebar({ role, onClose }: SidebarProps) {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8 hover:text-gray-900 dark:hover:text-gray-100"
                 )}
               >
                 <span className={isActive ? "text-blue-600" : "text-gray-400"}>
@@ -149,8 +149,8 @@ export function Sidebar({ role, onClose }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8 hover:text-gray-900 dark:hover:text-gray-100"
                 )}
               >
                 <span className={isActive ? "text-blue-600" : "text-gray-400"}>

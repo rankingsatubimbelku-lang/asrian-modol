@@ -8,6 +8,7 @@ import { generateNomorTransaksi } from "@/lib/format"
 import { createLoanSchema, loanInterestSettingSchema, bayarAngsuranSchema } from "@/validations/loan.schema"
 import { generateJadwalAngsuran } from "@/lib/calculations/installment"
 import { hitungDenda } from "@/lib/calculations/penalty"
+import { resolveDbUserId } from "@/lib/auth-helpers"
 
 export async function saveLoanInterestSetting(formData: FormData) {
   const session = await requireAdmin()
@@ -24,6 +25,7 @@ export async function saveLoanInterestSetting(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     await prisma.loanInterestSetting.updateMany({ data: { isActive: false } })
 
     const setting = await prisma.loanInterestSetting.create({
@@ -33,7 +35,7 @@ export async function saveLoanInterestSetting(formData: FormData) {
         berlakuMulai: new Date(d.berlakuMulai),
         isActive: true,
         dendaPerHari: parseFloat(d.dendaPerHari),
-        createdBy: session.user.id,
+        createdBy: createdById,
       },
     })
 

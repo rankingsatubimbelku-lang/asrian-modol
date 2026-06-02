@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { LaporanTabunganExport } from "@/components/shared/LaporanTabunganExport"
+import { BatchPostingPanel } from "./_components/BatchPostingPanel"
 import { CheckCircle2 } from "lucide-react"
 
 export default async function LaporanTabunganPage() {
@@ -13,6 +14,23 @@ export default async function LaporanTabunganPage() {
   const memberId = !isAdmin
     ? (await prisma.member.findFirst({ where: { userId: session.user.id } }))?.id ?? ""
     : ""
+
+  // Pending per tanggal untuk BatchPostingPanel
+  const pendingByDate = isAdmin
+    ? await prisma.savingsTransaction.groupBy({
+        by: ["tanggal"],
+        where: { isPosted: false },
+        _count: { id: true },
+        orderBy: { tanggal: "asc" },
+      })
+    : []
+
+  const pendingByDateMapped = pendingByDate.map(d => ({
+    tanggal: d.tanggal.toISOString().split("T")[0],
+    jumlah: d._count.id,
+  }))
+
+  const totalPending = pendingByDateMapped.reduce((acc, d) => acc + d.jumlah, 0)
 
   // LAPORAN VALID: hanya transaksi yang sudah diposting
   const adminTransactions = isAdmin
@@ -35,13 +53,9 @@ export default async function LaporanTabunganPage() {
       })
     : []
 
-  // Statistik posting (admin only)
-  const [totalPosted, totalPending] = isAdmin
-    ? await Promise.all([
-        prisma.savingsTransaction.count({ where: { isPosted: true } }),
-        prisma.savingsTransaction.count({ where: { isPosted: false } }),
-      ])
-    : [0, 0]
+  const [totalPosted] = isAdmin
+    ? await Promise.all([prisma.savingsTransaction.count({ where: { isPosted: true } })])
+    : [0]
 
   const jenisColor: Record<string, string> = {
     SETORAN: "text-green-600",
@@ -58,7 +72,15 @@ export default async function LaporanTabunganPage() {
         breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Tabungan", href: "/tabungan" }, { label: "Laporan" }]}
       />
 
-      {/* Status posting (admin only) */}
+      {/* Batch Posting Panel — admin only, muncul jika ada pending */}
+      {isAdmin && (
+        <BatchPostingPanel
+          totalPending={totalPending}
+          pendingByDate={pendingByDateMapped}
+        />
+      )}
+
+      {/* Statistik */}
       {isAdmin && (
         <div className="grid grid-cols-2 gap-3 mb-5 max-w-sm">
           <Card className="border-0 shadow-sm bg-green-50">
@@ -76,9 +98,9 @@ export default async function LaporanTabunganPage() {
         </div>
       )}
 
+      {/* Laporan Valid */}
       <Card className="border-0 shadow-sm">
         <CardContent className="pt-5">
-          {/* Header dengan keterangan laporan valid */}
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -96,7 +118,7 @@ export default async function LaporanTabunganPage() {
               <p className="text-gray-400 text-sm">Belum ada transaksi yang diposting</p>
               {isAdmin && totalPending > 0 && (
                 <p className="text-xs text-amber-600 mt-2">
-                  Ada {totalPending} transaksi pending — lakukan posting di halaman Histori Tabungan
+                  Gunakan panel Posting di atas untuk memposting transaksi pending
                 </p>
               )}
             </div>
@@ -110,14 +132,17 @@ export default async function LaporanTabunganPage() {
                         {(t.saving as { member?: { namaLengkap?: string } })?.member?.namaLengkap ?? "-"}
                       </p>
                       <p className="font-mono text-xs text-gray-400">{t.nomorTransaksi}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <p className="text-xs text-gray-500">{formatDate(t.tanggal)}</p>
                         {t.poster && (
-                          <p className="text-xs text-green-600">· Diposting oleh {t.poster.email}</p>
+                          <p className="text-xs text-green-600">
+                            · Diposting: {t.poster.email}
+                            {t.postedAt && ` (${formatDate(t.postedAt)})`}
+                          </p>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className={`font-bold text-sm ${jenisColor[t.jenis] ?? "text-gray-800"}`}>
                         {t.jenis === "PENARIKAN" ? "-" : "+"}{formatCurrency(String(t.nominal))}
                       </p>
@@ -129,7 +154,9 @@ export default async function LaporanTabunganPage() {
                   <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-mono text-xs text-gray-400">{t.nomorTransaksi}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{formatDate(t.tanggal)} · {t.keterangan ?? "-"}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {formatDate(t.tanggal)} · {t.keterangan ?? "-"}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className={`font-bold text-sm ${jenisColor[t.jenis] ?? "text-gray-800"}`}>

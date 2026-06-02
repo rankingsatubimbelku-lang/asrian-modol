@@ -86,35 +86,27 @@ async function main() {
       finalNomor = `MBR-${format(new Date(), "yyyyMM")}-${String(Math.floor(Math.random() * 9000 + 1000))}`
     }
 
-    await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          password: defaultPassword,
-          role: "ANGGOTA",
-          isActive: true,
-        },
-      })
-
-      const member = await tx.member.create({
-        data: {
-          userId: user.id,
-          nomorAnggota: finalNomor,
-          namaLengkap: data.nama,
-          nik,
-          tempatLahir: data.tempat,
-          tanggalLahir: new Date(`198${(i % 9) + 1}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`),
-          alamat: `Jl. ${data.tempat} No. ${i + 1}, Bali`,
-          nomorHp: data.hp,
-          tanggalBergabung: bergabung,
-          status: "AKTIF",
-        },
-      })
-
-      await tx.saving.create({
-        data: { memberId: member.id, saldo: 0 },
-      })
+    // Sequential queries — tidak pakai transaction agar tidak timeout di NeonDB free tier
+    const user = await prisma.user.create({
+      data: { email, password: defaultPassword, role: "ANGGOTA", isActive: true },
     })
+
+    const member = await prisma.member.create({
+      data: {
+        userId: user.id,
+        nomorAnggota: finalNomor,
+        namaLengkap: data.nama,
+        nik,
+        tempatLahir: data.tempat,
+        tanggalLahir: new Date(`198${(i % 9) + 1}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`),
+        alamat: `Jl. ${data.tempat} No. ${i + 1}, Bali`,
+        nomorHp: data.hp,
+        tanggalBergabung: bergabung,
+        status: "AKTIF",
+      },
+    })
+
+    await prisma.saving.create({ data: { memberId: member.id, saldo: 0 } })
 
     console.log(`  ✓ ${String(i + 1).padStart(2, " ")}. ${data.nama.padEnd(28)} ${finalNomor}  ${email}`)
     created++

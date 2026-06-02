@@ -63,6 +63,7 @@ export async function createLoan(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const setting = await prisma.loanInterestSetting.findFirst({ where: { isActive: true } })
     if (!setting) return { success: false, error: "Belum ada setting bunga kredit aktif" }
 

@@ -23,7 +23,7 @@ export default function TambahPeriodePage() {
       .then(d => setJumlahAnggotaAktif((d.data ?? []).length))
   }, [])
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     const result = await createPeriode(new FormData(e.currentTarget))

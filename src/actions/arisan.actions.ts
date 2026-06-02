@@ -22,21 +22,45 @@ export async function createPeriode(formData: FormData) {
   const d = parsed.data
 
   try {
-    const periode = await prisma.arisanPeriod.create({
-      data: {
-        namaPeriode: d.namaPeriode,
-        tanggalMulai: new Date(d.tanggalMulai),
-        tanggalSelesai: new Date(d.tanggalSelesai),
-        besarIuran: parseFloat(d.besarIuran),
-        maxPemenangPerBulan: parseInt(d.maxPemenangPerBulan),
-        status: "DRAFT",
-        createdBy: session.user.id,
-      },
+    // Buat periode dan langsung mapping semua anggota aktif dalam satu transaksi
+    const aktifMembers = await prisma.member.findMany({
+      where: { status: "AKTIF" },
+      select: { id: true },
     })
 
-    await logActivity({ userId: session.user.id, module: "arisan", action: "CREATE_PERIODE", entityId: periode.id })
+    const periode = await prisma.$transaction(async (tx) => {
+      const p = await tx.arisanPeriod.create({
+        data: {
+          namaPeriode: d.namaPeriode,
+          tanggalMulai: new Date(d.tanggalMulai),
+          tanggalSelesai: new Date(d.tanggalSelesai),
+          besarIuran: parseFloat(d.besarIuran),
+          maxPemenangPerBulan: parseInt(d.maxPemenangPerBulan),
+          status: "DRAFT",
+          createdBy: session.user.id,
+        },
+      })
+
+      // Auto-mapping semua anggota aktif ke periode ini
+      if (aktifMembers.length > 0) {
+        await tx.arisanMember.createMany({
+          data: aktifMembers.map((m) => ({ periodId: p.id, memberId: m.id })),
+          skipDuplicates: true,
+        })
+      }
+
+      return p
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "arisan",
+      action: "CREATE_PERIODE",
+      entityId: periode.id,
+      dataBaru: { namaPeriode: d.namaPeriode, jumlahAnggota: aktifMembers.length },
+    })
     revalidatePath("/arisan/periode")
-    return { success: true, data: periode }
+    return { success: true, data: periode, jumlahAnggota: aktifMembers.length }
   } catch {
     return { success: false, error: "Gagal membuat periode arisan" }
   }

@@ -93,7 +93,7 @@ model Member {
   userId           String       @unique @map("user_id")
   nomorAnggota     String       @unique @map("nomor_anggota")
   namaLengkap      String       @map("nama_lengkap")
-  nik              String       @unique
+  nik              String?      @unique
   tempatLahir      String       @map("tempat_lahir")
   tanggalLahir     DateTime     @map("tanggal_lahir") @db.Date
   alamat           String

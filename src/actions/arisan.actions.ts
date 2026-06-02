@@ -22,6 +22,7 @@ export async function createPeriode(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     // Buat periode dan langsung mapping semua anggota aktif dalam satu transaksi
     const aktifMembers = await prisma.member.findMany({
       where: { status: "AKTIF" },

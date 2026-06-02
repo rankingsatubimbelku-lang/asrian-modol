@@ -178,3 +178,36 @@ export async function toggleMemberStatus(id: string) {
     return { success: false, error: "Gagal mengubah status anggota" }
   }
 }
+
+export async function resetMemberPassword(id: string, newPassword: string) {
+  const session = await requireAdmin()
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Password minimal 6 karakter" }
+  }
+
+  try {
+    const member = await prisma.member.findUnique({
+      where: { id },
+      select: { userId: true, namaLengkap: true },
+    })
+    if (!member) return { success: false, error: "Anggota tidak ditemukan" }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: member.userId },
+      data: { password: hashedPassword },
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "members",
+      action: "RESET_PASSWORD",
+      entityId: id,
+    })
+
+    return { success: true }
+  } catch {
+    return { success: false, error: "Gagal mereset password" }
+  }
+}

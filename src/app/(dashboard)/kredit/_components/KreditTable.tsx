@@ -35,7 +35,7 @@ export function KreditTable({ loans }: { loans: Loan[] }) {
     {
       key: "nominal", label: "Nominal",
       render: (r: Loan) => (
-        <span className="font-semibold">{formatCurrency(r.nominalPinjaman)}</span>
+        <span className="font-semibold">{formatCurrency(String(r.nominalPinjaman))}</span>
       ),
     },
     { key: "tenor", label: "Tenor", render: (r: Loan) => `${r.tenor} bln` },

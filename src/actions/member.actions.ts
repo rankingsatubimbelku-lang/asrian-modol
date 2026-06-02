@@ -63,7 +63,7 @@ export async function createMember(formData: FormData) {
           userId: user.id,
           nomorAnggota,
           namaLengkap: d.namaLengkap,
-          nik: d.nik,
+          nik: d.nik ?? null,
           tempatLahir: d.tempatLahir,
           tanggalLahir: new Date(d.tanggalLahir),
           alamat: d.alamat,

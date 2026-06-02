@@ -133,27 +133,46 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
     setSpinning(true)
     setLastWinner(null)
 
-    // Pick random winner
-    const winnerIdx = Math.floor(Math.random() * n)
     const seg = (2 * Math.PI) / n
 
-    // Calculate target rotation to land exactly on winner (pointer at right = 0 rad)
+    // Pilih winner secara random
+    const winnerIdx = Math.floor(Math.random() * n)
     const winnerMid = (winnerIdx + 0.5) * seg
-    const fullSpins = (5 + Math.random() * 4) * 2 * Math.PI
-    const currentNorm = rotationRef.current % (2 * Math.PI)
-    const targetOffset = (2 * Math.PI - winnerMid + (2 * Math.PI - currentNorm)) % (2 * Math.PI)
-    const target = rotationRef.current + fullSpins + targetOffset
 
-    const duration = 4500 + Math.random() * 2000
+    // ====== FIX: kalkulasi target rotation yang benar ======
+    // Pointer ada di 3-o'clock = canvas angle 0
+    // Segment i midpoint di canvas = rot + (i+0.5)*seg - π/2
+    // Agar pointer tepat di midpoint winner:
+    //   rot + winnerMid - π/2 = 0  →  rot = π/2 - winnerMid
+    const desiredRot = ((Math.PI / 2 - winnerMid) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
+    const currentNorm = ((rotationRef.current % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+    const extra = (desiredRot - currentNorm + 2 * Math.PI) % (2 * Math.PI)
+
+    // Tambah 6-10 putaran penuh + sedikit extra agar dramatis
+    const fullSpins = (6 + Math.floor(Math.random() * 5)) * 2 * Math.PI
+    const target = rotationRef.current + fullSpins + extra
+    // =======================================================
+
+    // Durasi lebih panjang + easing lebih lambat di akhir
+    const duration = 6000 + Math.random() * 2000  // 6-8 detik
     const start = performance.now()
     const startRot = rotationRef.current
+
+    // Ease-out dengan power tinggi = melambat dramatis di 20% akhir
+    function easeOut(p: number): number {
+      if (p < 0.75) {
+        // 75% pertama: ease-out normal
+        return 0.85 * (1 - Math.pow(1 - p / 0.75, 4))
+      }
+      // 25% terakhir: sangat lambat (terlihat "hampir berhenti")
+      const q = (p - 0.75) / 0.25
+      return 0.85 + 0.15 * (1 - Math.pow(1 - q, 3))
+    }
 
     function animate(now: number) {
       const elapsed = now - start
       const p = Math.min(elapsed / duration, 1)
-      // Ease out quint
-      const e = 1 - Math.pow(1 - p, 5)
-      const cur = startRot + (target - startRot) * e
+      const cur = startRot + (target - startRot) * easeOut(p)
 
       rotationRef.current = cur
       draw(cur)
@@ -161,10 +180,24 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
       if (p < 1) {
         requestAnimationFrame(animate)
       } else {
+        // Snap ke posisi tepat
         rotationRef.current = target
+        draw(target)
         spinningRef.current = false
         setSpinning(false)
-        const winner = candidates[winnerIdx]
+
+        // Verifikasi winner dari posisi akhir roda (bukan dari winnerIdx yang dipilih awal)
+        // Cari segmen yang midpoint-nya paling dekat ke pointer (canvas angle 0)
+        const finalNorm = ((target % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+        let actualIdx = 0
+        let minDist = Infinity
+        for (let i = 0; i < n; i++) {
+          const midA = ((finalNorm + (i + 0.5) * seg - Math.PI / 2) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
+          const dist = Math.min(midA, 2 * Math.PI - midA)  // jarak ke angle 0
+          if (dist < minDist) { minDist = dist; actualIdx = i }
+        }
+
+        const winner = candidates[actualIdx]
         setLastWinner(winner)
         onWinner(winner)
       }

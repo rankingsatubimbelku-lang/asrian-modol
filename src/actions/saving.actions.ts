@@ -162,3 +162,43 @@ export async function hitungBungaOtomatis() {
     return { success: false, error: "Gagal menghitung bunga" }
   }
 }
+
+export async function postingTabungan(savingId: string) {
+  const session = await requireAdmin()
+
+  try {
+    // Ambil semua transaksi yang belum diposting
+    const pending = await prisma.savingsTransaction.findMany({
+      where: { savingId, isPosted: false },
+      select: { id: true },
+    })
+
+    if (pending.length === 0) {
+      return { success: false, error: "Tidak ada transaksi pending yang perlu diposting" }
+    }
+
+    const now = new Date()
+    await prisma.savingsTransaction.updateMany({
+      where: { savingId, isPosted: false },
+      data: {
+        isPosted: true,
+        postedAt: now,
+        postedBy: session.user.id,
+      },
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "tabungan",
+      action: "POSTING",
+      entityId: savingId,
+      dataBaru: { jumlahTransaksi: pending.length, postedAt: now },
+    })
+
+    revalidatePath(`/tabungan/${savingId}`)
+    revalidatePath("/tabungan/laporan")
+    return { success: true, jumlah: pending.length }
+  } catch {
+    return { success: false, error: "Gagal melakukan posting" }
+  }
+}

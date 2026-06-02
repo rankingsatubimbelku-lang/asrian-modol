@@ -44,12 +44,19 @@ export default function UndianPage() {
     setWinner(null)
     setConfirmed(false)
     fetch(`/api/v1/arisan/kandidat?periodId=${selectedPeriod}&bulan=${bulanUndian}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(d => {
         setKandidat((d.data ?? []).map((m: { id: string; namaLengkap: string }) => ({
           id: m.id,
           nama: m.namaLengkap,
         })))
+      })
+      .catch(err => {
+        console.error("Gagal fetch kandidat:", err)
+        setKandidat([])
       })
       .finally(() => setLoading(false))
   }, [selectedPeriod, bulanUndian])

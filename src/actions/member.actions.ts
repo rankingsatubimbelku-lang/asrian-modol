@@ -35,8 +35,11 @@ export async function createMember(formData: FormData) {
     const existingEmail = await prisma.user.findUnique({ where: { email: d.email } })
     if (existingEmail) return { success: false, error: "Email sudah digunakan" }
 
-    const existingNik = await prisma.member.findUnique({ where: { nik: d.nik } })
-    if (existingNik) return { success: false, error: "NIK sudah terdaftar" }
+    // Cek NIK hanya jika diisi
+    if (d.nik) {
+      const existingNik = await prisma.member.findUnique({ where: { nik: d.nik } })
+      if (existingNik) return { success: false, error: "NIK sudah terdaftar" }
+    }
 
     const hashedPassword = await bcrypt.hash(d.password, 12)
     let nomorAnggota = generateNomorAnggota()

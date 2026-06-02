@@ -82,7 +82,7 @@ export async function createLoan(formData: FormData) {
         interestSettingId: setting.id,
         status: "MENUNGGU_PERSETUJUAN",
         tanggalPengajuan: new Date(d.tanggalPengajuan),
-        createdBy: session.user.id,
+        createdBy: createdById,
       },
     })
 

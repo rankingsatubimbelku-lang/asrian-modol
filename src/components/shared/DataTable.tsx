@@ -79,7 +79,7 @@ export function DataTable<T extends Record<string, unknown>>({
               </TableRow>
             ) : (
               paginated.map((row, i) => (
-                <TableRow key={i} className="hover:bg-gray-50">
+                <TableRow key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   {columns.map((col) => (
                     <TableCell key={col.key} className={`text-sm py-3 ${col.className ?? ""}`}>
                       {col.render ? col.render(row) : String(row[col.key] ?? "-")}

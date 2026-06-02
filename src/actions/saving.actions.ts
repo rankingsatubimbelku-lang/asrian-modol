@@ -202,3 +202,50 @@ export async function postingTabungan(savingId: string) {
     return { success: false, error: "Gagal melakukan posting" }
   }
 }
+
+export async function postingSemuaTabungan(tanggal?: string) {
+  const session = await requireAdmin()
+
+  try {
+    // Filter by tanggal jika diisi, atau semua pending
+    const where = {
+      isPosted: false,
+      ...(tanggal ? { tanggal: new Date(tanggal) } : {}),
+    }
+
+    const pending = await prisma.savingsTransaction.findMany({
+      where,
+      select: { id: true },
+    })
+
+    if (pending.length === 0) {
+      return { success: false, error: tanggal
+        ? `Tidak ada transaksi pending pada tanggal ${tanggal}`
+        : "Tidak ada transaksi pending"
+      }
+    }
+
+    const now = new Date()
+    await prisma.savingsTransaction.updateMany({
+      where,
+      data: {
+        isPosted: true,
+        postedAt: now,
+        postedBy: session.user.id,
+      },
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "tabungan",
+      action: "POSTING_BATCH",
+      dataBaru: { jumlah: pending.length, tanggal: tanggal ?? "semua", postedAt: now },
+    })
+
+    revalidatePath("/tabungan/laporan")
+    revalidatePath("/tabungan")
+    return { success: true, jumlah: pending.length }
+  } catch {
+    return { success: false, error: "Gagal melakukan batch posting" }
+  }
+}

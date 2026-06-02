@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { AngsuranTable } from "./_components/AngsuranTable"
 import { PelunasanButton } from "./_components/PelunasanButton"
+import { serialize } from "@/lib/serialize"
 
 export default async function KreditDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()

@@ -2,7 +2,10 @@ import { z } from "zod"
 
 export const createMemberSchema = z.object({
   namaLengkap: z.string().min(3, "Nama minimal 3 karakter"),
-  nik: z.string().length(16, "NIK harus 16 digit").regex(/^\d+$/, "NIK hanya angka").optional().or(z.literal("")),
+  nik: z.string().optional().refine(
+    (val) => !val || /^\d{16}$/.test(val),
+    "NIK harus tepat 16 digit angka"
+  ),
   email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
   nomorHp: z.string().min(10, "No. HP minimal 10 digit").max(15),

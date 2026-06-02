@@ -75,7 +75,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <StatCard title="Saldo Tabungan" value={formatCurrency(String(member?.saving?.saldo ?? 0))}
-            subtitle="Per hari ini" icon={<PiggyBank className="w-5 h-5 text-green-600" />} color="bg-green-50" href="/tabungan" />
+            subtitle="Per hari ini" icon={<PiggyBank className="w-5 h-5 text-green-600" />} color="bg-green-50 dark:bg-green-900/30" href="/tabungan" />
           <StatCard title="Sisa Kredit" value={activeLoan ? formatCurrency(String(activeLoan.nominalPinjaman)) : "Tidak ada"}
             subtitle={activeLoan ? `${activeLoan.installments.length} angsuran tersisa` : "Kredit aktif"}
             icon={<CreditCard className="w-5 h-5 text-orange-600" />} color="bg-orange-50" href="/kredit" />
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
         <StatCard title="Total Anggota" value={String(totalAnggota)} subtitle="Anggota aktif"
           icon={<Users className="w-5 h-5 text-blue-600" />} color="bg-blue-50 dark:bg-blue-900/30" href="/anggota" />
         <StatCard title="Total Tabungan" value={formatCurrency(String(totalTabungan._sum.saldo ?? 0))} subtitle="Semua anggota"
-          icon={<PiggyBank className="w-5 h-5 text-green-600" />} color="bg-green-50" href="/tabungan" />
+          icon={<PiggyBank className="w-5 h-5 text-green-600" />} color="bg-green-50 dark:bg-green-900/30" href="/tabungan" />
         <StatCard title="Kredit Aktif" value={String(kreditAktif)} subtitle={tunggakan > 0 ? `${tunggakan} menunggak` : "Semua lancar"}
           icon={<CreditCard className="w-5 h-5 text-orange-600" />} color="bg-orange-50" href="/kredit" />
         <StatCard title="Arisan Berjalan" value={arisanAktif ? "Aktif" : "Tidak ada"} subtitle={arisanAktif?.namaPeriode ?? "Belum ada periode aktif"}

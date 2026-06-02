@@ -122,6 +122,7 @@ export async function inputIuran(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const existing = await prisma.arisanPayment.findFirst({
       where: { periodId: d.periodId, memberId: d.memberId, bulan: d.bulan },
     })
@@ -135,7 +136,7 @@ export async function inputIuran(formData: FormData) {
         nominal: parseFloat(d.nominal),
         tanggalBayar: new Date(d.tanggalBayar),
         status: "LUNAS",
-        createdBy: session.user.id,
+        createdBy: createdById,
       },
     })
 

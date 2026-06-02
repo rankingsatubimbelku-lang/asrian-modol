@@ -1,8 +1,9 @@
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
-export function formatCurrency(value: number | string): string {
-  const num = typeof value === "string" ? parseFloat(value) : value
+export function formatCurrency(value: number | string | { toString(): string }): string {
+  const str = typeof value === "number" ? value : String(value)
+  const num = typeof str === "number" ? str : parseFloat(str)
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",

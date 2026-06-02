@@ -22,11 +22,11 @@ export default async function LaporanKreditPage() {
     _sum: { nominalPinjaman: true },
   })
 
-  const recentLoans = await prisma.loan.findMany({
+  const recentLoans = serialize(await prisma.loan.findMany({
     include: { member: { select: { namaLengkap: true, nomorAnggota: true } } },
     orderBy: { createdAt: "desc" },
     take: 20,
-  })
+  }))
 
   const stats = [
     { label: "Kredit Aktif", value: aktif, color: "text-blue-600" },

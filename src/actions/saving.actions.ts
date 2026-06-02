@@ -88,6 +88,7 @@ export async function saveSavingInterestSetting(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     await prisma.savingsInterestSetting.updateMany({ data: { isActive: false } })
 
     const setting = await prisma.savingsInterestSetting.create({
@@ -112,6 +113,7 @@ export async function hitungBungaOtomatis() {
   const session = await requireAdmin()
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const setting = await prisma.savingsInterestSetting.findFirst({ where: { isActive: true } })
     if (!setting) return { success: false, error: "Belum ada setting bunga aktif" }
 
@@ -168,7 +170,7 @@ export async function postingTabungan(savingId: string) {
   const session = await requireAdmin()
 
   try {
-    // Ambil semua transaksi yang belum diposting
+    const postedById = await resolveDbUserId(session.user.id)
     const pending = await prisma.savingsTransaction.findMany({
       where: { savingId, isPosted: false },
       select: { id: true },
@@ -181,11 +183,7 @@ export async function postingTabungan(savingId: string) {
     const now = new Date()
     await prisma.savingsTransaction.updateMany({
       where: { savingId, isPosted: false },
-      data: {
-        isPosted: true,
-        postedAt: now,
-        postedBy: session.user.id,
-      },
+      data: { isPosted: true, postedAt: now, postedBy: postedById },
     })
 
     await logActivity({
@@ -208,7 +206,7 @@ export async function postingSemuaTabungan(tanggal?: string) {
   const session = await requireAdmin()
 
   try {
-    // Filter by tanggal jika diisi, atau semua pending
+    const postedById = await resolveDbUserId(session.user.id)
     const where = {
       isPosted: false,
       ...(tanggal ? { tanggal: new Date(tanggal) } : {}),
@@ -229,11 +227,7 @@ export async function postingSemuaTabungan(tanggal?: string) {
     const now = new Date()
     await prisma.savingsTransaction.updateMany({
       where,
-      data: {
-        isPosted: true,
-        postedAt: now,
-        postedBy: session.user.id,
-      },
+      data: { isPosted: true, postedAt: now, postedBy: postedById },
     })
 
     await logActivity({

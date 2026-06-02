@@ -29,7 +29,7 @@ export function MobileBottomNav({ role }: MobileBottomNavProps) {
   const items = ["ADMIN", "SUPER_ADMIN"].includes(role) ? adminNav : anggotaNav
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-30 safe-area-pb">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-white/10 z-30 safe-area-pb">
       <div className="flex items-stretch">
         {items.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/")

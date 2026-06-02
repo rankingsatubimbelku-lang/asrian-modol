@@ -60,8 +60,8 @@ export default function TambahAnggotaPage() {
                 <Field label="Nama Lengkap *">
                   <Input name="namaLengkap" placeholder="Nama lengkap" required className="h-10" />
                 </Field>
-                <Field label="NIK (16 digit) *">
-                  <Input name="nik" placeholder="1234567890123456" maxLength={16} required className="h-10" />
+                <Field label="NIK (16 digit)">
+                  <Input name="nik" placeholder="1234567890123456 (opsional)" maxLength={16} className="h-10" />
                 </Field>
                 <Field label="Tempat Lahir *">
                   <Input name="tempatLahir" placeholder="Kota kelahiran" required className="h-10" />

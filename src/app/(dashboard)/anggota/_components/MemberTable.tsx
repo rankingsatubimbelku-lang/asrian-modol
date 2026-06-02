@@ -14,7 +14,7 @@ type Member = {
   id: string
   nomorAnggota: string
   namaLengkap: string
-  nik: string
+  nik: string | null
   nomorHp: string
   status: string
   tanggalBergabung: Date

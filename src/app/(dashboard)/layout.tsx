@@ -16,9 +16,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const email = session?.user?.email ?? ""
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col border-r z-20">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col border-r dark:border-white/10 z-20">
         <Sidebar role={role} />
       </aside>
 

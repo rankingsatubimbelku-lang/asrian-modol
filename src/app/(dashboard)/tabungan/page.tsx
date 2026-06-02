@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { DataTable } from "@/components/shared/DataTable"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { PiggyBank } from "lucide-react"
+import { serialize } from "@/lib/serialize"
 
 export default async function TabunganPage() {
   const session = await requireAuth()

@@ -35,7 +35,7 @@ export default async function LaporanTabunganPage() {
 
   // LAPORAN VALID: hanya transaksi yang sudah diposting
   const adminTransactions = isAdmin
-    ? await prisma.savingsTransaction.findMany({
+    ? serialize(await prisma.savingsTransaction.findMany({
         where: { isPosted: true },
         include: {
           saving: { include: { member: { select: { namaLengkap: true } } } },
@@ -43,15 +43,15 @@ export default async function LaporanTabunganPage() {
         },
         orderBy: { tanggal: "desc" },
         take: 100,
-      })
+      }))
     : []
 
   const anggotaTransactions = !isAdmin
-    ? await prisma.savingsTransaction.findMany({
+    ? serialize(await prisma.savingsTransaction.findMany({
         where: { memberId, isPosted: true },
         orderBy: { tanggal: "desc" },
         take: 50,
-      })
+      }))
     : []
 
   const [totalPosted] = isAdmin

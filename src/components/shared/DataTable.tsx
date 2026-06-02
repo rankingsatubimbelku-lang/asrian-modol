@@ -59,12 +59,12 @@ export function DataTable<T extends Record<string, unknown>>({
       )}
 
       {/* Horizontal scroll for mobile */}
-      <div className="overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-lg border dark:border-white/10 bg-white dark:bg-gray-900">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
+            <TableRow className="bg-gray-50 dark:bg-gray-800/60">
               {columns.map((col) => (
-                <TableHead key={col.key} className={`text-xs font-semibold text-gray-600 whitespace-nowrap ${col.className ?? ""}`}>
+                <TableHead key={col.key} className={`text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap ${col.className ?? ""}`}>
                   {col.label}
                 </TableHead>
               ))}

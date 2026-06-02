@@ -28,7 +28,7 @@ export function TabunganTable({ savings }: { savings: Saving[] }) {
       key: "saldo",
       label: "Saldo",
       render: (r: Saving) => (
-        <span className="font-semibold text-green-600">{formatCurrency(String(r.saldo))}</span>
+        <span className="font-semibold text-green-600">{formatCurrency(r.saldo)}</span>
       ),
     },
     {

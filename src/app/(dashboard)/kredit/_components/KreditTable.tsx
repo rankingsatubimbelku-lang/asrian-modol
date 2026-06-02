@@ -7,15 +7,17 @@ import { formatCurrency, formatDate } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 
+type DecimalLike = { toString(): string } | string | number
+
 type Loan = {
   id: string
   nomorPengajuan: string
-  nominalPinjaman: string
+  nominalPinjaman: DecimalLike
   tenor: number
   status: string
   tanggalPengajuan: Date | string
   member: { namaLengkap: string; nomorAnggota: string }
-  interestSetting: { persentase: string; metode: string }
+  interestSetting: { persentase: DecimalLike; metode: string }
 }
 
 export function KreditTable({ loans }: { loans: Loan[] }) {

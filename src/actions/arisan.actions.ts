@@ -191,7 +191,7 @@ export async function jalankanUndian(formData: FormData) {
           bulanUndian: d.bulanUndian,
           tanggalUndian: new Date(),
           jumlahPemenang: jml,
-          createdBy: session.user.id,
+          createdBy: createdById,
         },
       })
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
 import { simpanHasilUndian } from "@/actions/arisan.actions"
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -10,22 +10,29 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { SpinWheel, type WheelCandidate } from "@/components/shared/SpinWheel"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { Loader2, Trophy, Users, AlertCircle } from "lucide-react"
+import { Loader2, Trophy, Users, AlertCircle, CheckCircle2 } from "lucide-react"
 import { currentYearMonth, formatMonth, formatCurrency } from "@/lib/format"
 
 type Periode = { id: string; namaPeriode: string; status: string; besarIuran: string }
+type SlotInfo = {
+  maxPemenang: number
+  pemenangBulanIni: number
+  sisaSlot: number
+  sudahMaksimal: boolean
+  nominalHakPerPemenang: number
+}
 
 export default function UndianPage() {
   const [periodes, setPeriodes] = useState<Periode[]>([])
   const [selectedPeriod, setSelectedPeriod] = useState("")
   const [bulanUndian, setBulanUndian] = useState(currentYearMonth())
   const [kandidat, setKandidat] = useState<WheelCandidate[]>([])
+  const [slotInfo, setSlotInfo] = useState<SlotInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [winner, setWinner] = useState<WheelCandidate | null>(null)
   const [confirmed, setConfirmed] = useState(false)
 
-  // Hanya periode AKTIF
   useEffect(() => {
     fetch("/api/v1/arisan/periods?status=AKTIF")
       .then(r => r.json())
@@ -36,35 +43,36 @@ export default function UndianPage() {
       })
   }, [])
 
-  // Load kandidat saat periode / bulan berubah
-  useEffect(() => {
+  const refreshData = useCallback(() => {
     if (!selectedPeriod) return
     setLoading(true)
-    setKandidat([])
     setWinner(null)
     setConfirmed(false)
-    fetch(`/api/v1/arisan/kandidat?periodId=${selectedPeriod}&bulan=${bulanUndian}`)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then(d => {
-        setKandidat((d.data ?? []).map((m: { id: string; namaLengkap: string }) => ({
-          id: m.id,
-          nama: m.namaLengkap,
-        })))
-      })
-      .catch(err => {
-        console.error("Gagal fetch kandidat:", err)
-        setKandidat([])
-      })
-      .finally(() => setLoading(false))
+
+    Promise.all([
+      fetch(`/api/v1/arisan/kandidat?periodId=${selectedPeriod}&bulan=${bulanUndian}`)
+        .then(r => r.ok ? r.json() : { data: [] }),
+      fetch(`/api/v1/arisan/pemenang-bulan?periodId=${selectedPeriod}&bulan=${bulanUndian}`)
+        .then(r => r.ok ? r.json() : { data: null }),
+    ]).then(([kData, sData]) => {
+      setKandidat((kData.data ?? []).map((m: { id: string; namaLengkap: string }) => ({
+        id: m.id,
+        nama: m.namaLengkap,
+      })))
+      setSlotInfo(sData.data ?? null)
+    }).catch(() => {
+      setKandidat([])
+      setSlotInfo(null)
+    }).finally(() => setLoading(false))
   }, [selectedPeriod, bulanUndian])
+
+  useEffect(() => {
+    refreshData()
+  }, [refreshData])
 
   function handleWinner(w: WheelCandidate) {
     setWinner(w)
     setConfirmed(false)
-    // Flash toast
     toast.info(`Roda berhenti di: ${w.nama}`, { duration: 3000 })
   }
 
@@ -75,16 +83,17 @@ export default function UndianPage() {
     if (result.success) {
       toast.success(`🎉 ${result.namaLengkap} resmi menang arisan ${formatMonth(bulanUndian)}!`)
       setConfirmed(true)
-      // Refresh kandidat (hapus pemenang dari list)
-      setKandidat(prev => prev.filter(k => k.id !== winner.id))
-      setWinner(null)
+      // Refresh semua data (kandidat + slot info)
+      setTimeout(() => refreshData(), 300)
     } else {
       toast.error(result.error)
+      setSaving(false)
     }
     setSaving(false)
   }
 
   const activePeriode = periodes.find(p => p.id === selectedPeriod)
+  const spinDisabled = confirmed || saving || (slotInfo?.sudahMaksimal ?? false)
 
   return (
     <div>
@@ -94,7 +103,7 @@ export default function UndianPage() {
       />
 
       {/* Konfigurasi */}
-      <Card className="border-0 shadow-sm mb-5 max-w-lg">
+      <Card className="border-0 shadow-sm mb-5 max-w-xl">
         <CardContent className="pt-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -119,13 +128,38 @@ export default function UndianPage() {
             </div>
           </div>
 
+          {/* Info slot pemenang */}
+          {selectedPeriod && !loading && slotInfo && (
+            <div className={`mt-4 p-3 rounded-lg flex items-center justify-between flex-wrap gap-2 ${
+              slotInfo.sudahMaksimal ? "bg-green-50 border border-green-200" : "bg-blue-50 border border-blue-200"
+            }`}>
+              <div className="flex items-center gap-2 text-sm">
+                {slotInfo.sudahMaksimal
+                  ? <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  : <Trophy className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                }
+                <span className={slotInfo.sudahMaksimal ? "text-green-700 font-medium" : "text-blue-700"}>
+                  {slotInfo.sudahMaksimal
+                    ? `Kuota penuh — ${slotInfo.maxPemenang} pemenang sudah diundi bulan ini`
+                    : <>
+                        <span className="font-semibold">{slotInfo.pemenangBulanIni}</span> dari{" "}
+                        <span className="font-semibold">{slotInfo.maxPemenang}</span> pemenang bulan ini ·{" "}
+                        Sisa <span className="font-semibold text-blue-800">{slotInfo.sisaSlot} slot</span>
+                      </>
+                  }
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <span>Dana/pemenang:</span>
+                <span className="font-semibold text-gray-700">{formatCurrency(slotInfo.nominalHakPerPemenang)}</span>
+              </div>
+            </div>
+          )}
+
           {selectedPeriod && !loading && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
-              <span>
-                <span className="font-semibold text-blue-600">{kandidat.length}</span> kandidat eligible
-                {activePeriode && ` · Dana arisan: ${formatCurrency(activePeriode.besarIuran)}/anggota`}
-              </span>
+              <span>{kandidat.length} kandidat eligible · {formatCurrency(activePeriode?.besarIuran ?? "0")}/anggota/bln</span>
             </div>
           )}
         </CardContent>
@@ -142,11 +176,21 @@ export default function UndianPage() {
                 <div className="w-80 h-80 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                 </div>
+              ) : slotInfo?.sudahMaksimal ? (
+                <div className="flex flex-col items-center gap-4 py-12">
+                  <CheckCircle2 className="w-16 h-16 text-green-400" />
+                  <div className="text-center">
+                    <p className="font-bold text-gray-700 text-lg">Undian Bulan Ini Selesai</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {slotInfo.maxPemenang} pemenang sudah diundi untuk {formatMonth(bulanUndian)}
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <SpinWheel
                   candidates={kandidat}
                   onWinner={handleWinner}
-                  disabled={confirmed || saving}
+                  disabled={spinDisabled}
                 />
               )}
             </CardContent>
@@ -156,7 +200,7 @@ export default function UndianPage() {
           <div className="w-full lg:w-[30%] space-y-4">
 
             {/* Info kandidat */}
-            {!loading && kandidat.length > 0 && (
+            {!loading && kandidat.length > 0 && !slotInfo?.sudahMaksimal && (
               <Card className="border-0 shadow-sm">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -178,7 +222,7 @@ export default function UndianPage() {
             )}
 
             {/* Tidak ada kandidat */}
-            {!loading && kandidat.length === 0 && selectedPeriod && (
+            {!loading && kandidat.length === 0 && !slotInfo?.sudahMaksimal && selectedPeriod && (
               <Card className="border-0 shadow-sm bg-amber-50">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start gap-2">
@@ -186,7 +230,7 @@ export default function UndianPage() {
                     <div>
                       <p className="text-sm font-semibold text-amber-700">Tidak ada kandidat</p>
                       <p className="text-xs text-amber-600 mt-0.5">
-                        Pastikan anggota sudah bayar iuran {formatMonth(bulanUndian)} dan belum pernah menang di periode ini.
+                        Pastikan anggota sudah bayar iuran {formatMonth(bulanUndian)} dan belum pernah menang.
                       </p>
                     </div>
                   </div>
@@ -195,7 +239,7 @@ export default function UndianPage() {
             )}
 
             {/* Konfirmasi pemenang */}
-            {winner && !confirmed && (
+            {winner && !confirmed && !slotInfo?.sudahMaksimal && (
               <Card className="border-0 shadow-sm border-t-4 border-t-yellow-400 bg-yellow-50">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -207,6 +251,11 @@ export default function UndianPage() {
                     <p className="text-xs text-gray-400 text-center mt-1">
                       {formatMonth(bulanUndian)} · {activePeriode?.namaPeriode}
                     </p>
+                    {slotInfo && (
+                      <p className="text-sm font-semibold text-green-600 text-center mt-2">
+                        {formatCurrency(slotInfo.nominalHakPerPemenang)}
+                      </p>
+                    )}
                   </div>
                   <ConfirmDialog
                     trigger={
@@ -216,7 +265,7 @@ export default function UndianPage() {
                       </Button>
                     }
                     title="Konfirmasi Pemenang Undian"
-                    description={`${winner.nama} akan dicatat sebagai pemenang arisan ${formatMonth(bulanUndian)}. Proses ini tidak bisa dibatalkan.`}
+                    description={`${winner.nama} akan dicatat sebagai pemenang arisan ${formatMonth(bulanUndian)} dengan dana ${formatCurrency(slotInfo?.nominalHakPerPemenang ?? 0)}. Proses ini tidak bisa dibatalkan.`}
                     actionLabel="Simpan Hasil Undian"
                     onConfirm={handleKonfirmasi}
                   />
@@ -224,14 +273,14 @@ export default function UndianPage() {
               </Card>
             )}
 
-            {/* Sukses dikonfirmasi */}
-            {confirmed && (
+            {/* Sukses + info sisa slot */}
+            {confirmed && slotInfo && !slotInfo.sudahMaksimal && (
               <Card className="border-0 shadow-sm border-t-4 border-t-green-500 bg-green-50">
                 <CardContent className="pt-4 pb-4 text-center">
                   <Trophy className="w-8 h-8 text-green-500 mx-auto mb-2" />
                   <p className="font-bold text-green-700">Hasil undian tersimpan!</p>
                   <p className="text-xs text-green-600 mt-1">
-                    Putar roda kembali untuk undian berikutnya
+                    Sisa <span className="font-semibold">{slotInfo.sisaSlot}</span> slot · Putar kembali
                   </p>
                 </CardContent>
               </Card>

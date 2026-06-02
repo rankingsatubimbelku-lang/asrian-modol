@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createPeriode } from "@/actions/arisan.actions"
@@ -9,18 +9,27 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, Users } from "lucide-react"
 
 export default function TambahPeriodePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [jumlahAnggotaAktif, setJumlahAnggotaAktif] = useState<number | null>(null)
+
+  // Tampilkan preview jumlah anggota aktif yang akan didaftarkan
+  useEffect(() => {
+    fetch("/api/v1/members")
+      .then(r => r.json())
+      .then(d => setJumlahAnggotaAktif((d.data ?? []).length))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     const result = await createPeriode(new FormData(e.currentTarget))
     if (result.success) {
-      toast.success("Periode arisan berhasil dibuat")
+      const jml = result.jumlahAnggota ?? 0
+      toast.success(`Periode berhasil dibuat — ${jml} anggota aktif otomatis terdaftar`)
       router.push("/arisan/periode")
     } else {
       toast.error(result.error)
@@ -39,6 +48,16 @@ export default function TambahPeriodePage() {
       />
       <Card className="border-0 shadow-sm max-w-lg">
         <CardContent className="pt-5">
+          {/* Info anggota yang akan otomatis masuk */}
+          {jumlahAnggotaAktif !== null && (
+            <div className="mb-4 flex items-center gap-2.5 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <p className="text-sm text-blue-700">
+                <span className="font-semibold">{jumlahAnggotaAktif} anggota aktif</span> akan otomatis didaftarkan ke periode ini.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Nama Periode *</Label>
@@ -67,7 +86,7 @@ export default function TambahPeriodePage() {
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Simpan
+                Buat Periode
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
             </div>

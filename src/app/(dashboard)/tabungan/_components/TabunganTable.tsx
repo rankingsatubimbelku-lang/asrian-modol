@@ -1,7 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { DataTable } from "@/components/shared/DataTable"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { Button } from "@/components/ui/button"
+import { History } from "lucide-react"
 
 type DecimalLike = { toString(): string } | string | number
 
@@ -35,6 +38,18 @@ export function TabunganTable({ savings }: { savings: Saving[] }) {
       key: "updatedAt",
       label: "Update Terakhir",
       render: (r: Saving) => formatDate(new Date(r.updatedAt)),
+    },
+    {
+      key: "aksi",
+      label: "Aksi",
+      render: (r: Saving) => (
+        <Link href={`/tabungan/${r.id}`}>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50">
+            <History className="w-3.5 h-3.5" />
+            Histori
+          </Button>
+        </Link>
+      ),
     },
   ]
 

@@ -162,6 +162,7 @@ export async function jalankanUndian(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const sudahUndian = await prisma.arisanDraw.findFirst({
       where: { periodId: d.periodId, bulanUndian: d.bulanUndian },
     })

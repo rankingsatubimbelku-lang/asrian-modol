@@ -61,31 +61,36 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
       ctx.lineWidth = 2.5
       ctx.stroke()
 
-      // Text: nomor urut + nama
+      // Text radial: searah jari-jari segmen (dari pusat ke tepi)
       const mid = rot + (i + 0.5) * seg - Math.PI / 2
-      const tr = r * 0.62
-      const tx = cx + tr * Math.cos(mid)
-      const ty = cy + tr * Math.sin(mid)
+      const fontSize = n > 24 ? 7 : n > 18 ? 8 : n > 12 ? 9 : 10
+      const maxChars = n > 20 ? 8 : n > 12 ? 10 : 12
+      const namaTrunc = candidates[i].nama.length > maxChars
+        ? candidates[i].nama.slice(0, maxChars - 1) + "…"
+        : candidates[i].nama
+      const label = `${i + 1}. ${namaTrunc}`
+
+      // Tentukan apakah segmen di sisi kiri atau kanan roda
+      const isRight = Math.cos(mid) >= 0
 
       ctx.save()
-      ctx.translate(tx, ty)
-      ctx.rotate(mid + Math.PI / 2)
+      ctx.translate(cx, cy)
+
+      // Kanan: rotate = mid → teks mengarah keluar (kiri ke kanan = pusat ke tepi)
+      // Kiri: rotate = mid + π → flip agar teks tetap terbaca (kiri ke kanan = tepi ke pusat, tp di-flip jadi pusat ke tepi)
+      ctx.rotate(isRight ? mid : mid + Math.PI)
+
+      // Posisi teks: 60% dari radius, di sisi yang benar
+      const rSign = isRight ? 1 : -1
+      const textX = rSign * r * 0.60
+
       ctx.fillStyle = "#ffffff"
-      ctx.shadowColor = "rgba(0,0,0,0.5)"
+      ctx.shadowColor = "rgba(0,0,0,0.55)"
       ctx.shadowBlur = 3
-
-      const fontSize = n > 20 ? 8 : n > 12 ? 9 : 10
-      const namaTrunc = candidates[i].nama.length > 12 ? candidates[i].nama.slice(0, 11) + "…" : candidates[i].nama
-
-      // Nomor urut — di atas
-      ctx.font = `bold ${fontSize + 1}px ui-sans-serif, system-ui, sans-serif`
+      ctx.font = `bold ${fontSize}px ui-sans-serif, system-ui, sans-serif`
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
-      ctx.fillText(`${i + 1}.`, 0, -fontSize * 0.9)
-
-      // Nama — di bawah nomor
-      ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`
-      ctx.fillText(namaTrunc, 0, fontSize * 0.8)
+      ctx.fillText(label, textX, 0)
 
       ctx.restore()
     }

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { LaporanKreditExport } from "@/components/shared/LaporanKreditExport"
 import { formatCurrency } from "@/lib/format"
+import { serialize } from "@/lib/serialize"
 
 export default async function LaporanKreditPage() {
   await requireAdmin()

@@ -61,7 +61,7 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
       ctx.lineWidth = 2.5
       ctx.stroke()
 
-      // Name text
+      // Text: nomor urut + nama
       const mid = rot + (i + 0.5) * seg - Math.PI / 2
       const tr = r * 0.62
       const tx = cx + tr * Math.cos(mid)
@@ -71,13 +71,22 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
       ctx.translate(tx, ty)
       ctx.rotate(mid + Math.PI / 2)
       ctx.fillStyle = "#ffffff"
-      ctx.shadowColor = "rgba(0,0,0,0.4)"
+      ctx.shadowColor = "rgba(0,0,0,0.5)"
       ctx.shadowBlur = 3
-      ctx.font = `bold ${n > 20 ? 9 : n > 12 ? 10 : 11}px ui-sans-serif, system-ui, sans-serif`
+
+      const fontSize = n > 20 ? 8 : n > 12 ? 9 : 10
+      const namaTrunc = candidates[i].nama.length > 12 ? candidates[i].nama.slice(0, 11) + "…" : candidates[i].nama
+
+      // Nomor urut — di atas
+      ctx.font = `bold ${fontSize + 1}px ui-sans-serif, system-ui, sans-serif`
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
-      const nama = candidates[i].nama.length > 13 ? candidates[i].nama.slice(0, 12) + "…" : candidates[i].nama
-      ctx.fillText(nama, 0, 0)
+      ctx.fillText(`${i + 1}.`, 0, -fontSize * 0.9)
+
+      // Nama — di bawah nomor
+      ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`
+      ctx.fillText(namaTrunc, 0, fontSize * 0.8)
+
       ctx.restore()
     }
 

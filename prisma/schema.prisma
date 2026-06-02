@@ -237,8 +237,14 @@ model SavingsTransaction {
   createdBy      String                @map("created_by")
   createdAt      DateTime              @default(now()) @map("created_at")
 
-  saving  Saving @relation(fields: [savingId], references: [id])
-  creator User   @relation(fields: [createdBy], references: [id])
+  // Posting fields — transaksi yang sudah diposting tidak bisa diubah/hapus
+  isPosted  Boolean   @default(false) @map("is_posted")
+  postedAt  DateTime? @map("posted_at")
+  postedBy  String?   @map("posted_by")
+
+  saving Saving @relation(fields: [savingId], references: [id])
+  creator User  @relation(fields: [createdBy], references: [id])
+  poster  User? @relation("PostedBy", fields: [postedBy], references: [id])
 
   @@map("savings_transactions")
 }

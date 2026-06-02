@@ -131,13 +131,13 @@ export default function UndianPage() {
         </CardContent>
       </Card>
 
-      {/* Area Spin Wheel */}
+      {/* Area Spin Wheel — 70% kiri, 30% kanan */}
       {selectedPeriod && (
-        <div className="flex flex-col lg:flex-row gap-5 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 items-start w-full">
 
-          {/* Spin Wheel */}
-          <Card className="border-0 shadow-sm flex-shrink-0">
-            <CardContent className="pt-5 pb-6 px-8">
+          {/* Spin Wheel — 70% */}
+          <Card className="border-0 shadow-sm w-full lg:w-[70%]">
+            <CardContent className="pt-5 pb-6 flex items-center justify-center">
               {loading ? (
                 <div className="w-80 h-80 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -152,8 +152,8 @@ export default function UndianPage() {
             </CardContent>
           </Card>
 
-          {/* Panel kanan — konfirmasi & info */}
-          <div className="flex-1 space-y-4 min-w-64">
+          {/* Panel kanan — 30% */}
+          <div className="w-full lg:w-[30%] space-y-4">
 
             {/* Info kandidat */}
             {!loading && kandidat.length > 0 && (

@@ -101,6 +101,7 @@ export async function approveLoan(loanId: string, formData: FormData) {
   const catatan = formData.get("catatanApproval") as string
 
   try {
+    const approvedById = await resolveDbUserId(session.user.id)
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
       include: { interestSetting: true },

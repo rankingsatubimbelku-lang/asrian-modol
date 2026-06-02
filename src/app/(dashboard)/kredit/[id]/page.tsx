@@ -13,7 +13,7 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
   const session = await requireAuth()
   const { id } = await params
 
-  const loan = await prisma.loan.findUnique({
+  const rawLoan = await prisma.loan.findUnique({
     where: { id },
     include: {
       member: { select: { namaLengkap: true, nomorAnggota: true } },
@@ -22,7 +22,8 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
     },
   })
 
-  if (!loan) notFound()
+  if (!rawLoan) notFound()
+  const loan = serialize(rawLoan)
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role)
 

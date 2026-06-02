@@ -174,8 +174,8 @@ export function Sidebar({ role, onClose }: SidebarProps) {
                       className={cn(
                         "block px-3 py-2 rounded-lg text-sm transition-colors",
                         pathname === child.href
-                          ? "bg-blue-50 text-blue-700 font-medium"
-                          : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                          ? "bg-blue-50 text-blue-700 font-medium dark:bg-blue-950/60 dark:text-blue-400"
+                          : "text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/8 hover:text-gray-800 dark:hover:text-gray-200"
                       )}
                     >
                       {child.label}

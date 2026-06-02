@@ -11,7 +11,7 @@ export default async function TabunganPage() {
   const session = await requireAuth()
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role)
 
-  const savings = isAdmin
+  const savings = serialize(isAdmin
     ? await prisma.saving.findMany({
         include: { member: { select: { namaLengkap: true, nomorAnggota: true } } },
         orderBy: { saldo: "desc" },
@@ -19,7 +19,7 @@ export default async function TabunganPage() {
     : await prisma.saving.findMany({
         where: { member: { userId: session.user.id } },
         include: { member: { select: { namaLengkap: true, nomorAnggota: true } } },
-      })
+      }))
 
   const totalSaldo = savings.reduce((acc, s) => acc + Number(s.saldo), 0)
 

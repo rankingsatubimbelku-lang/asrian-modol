@@ -213,3 +213,58 @@ export async function jalankanUndian(formData: FormData) {
     return { success: false, error: "Gagal menjalankan undian" }
   }
 }
+
+// Simpan hasil undian dari spin wheel (winner sudah ditentukan di client)
+export async function simpanHasilUndian(periodId: string, bulanUndian: string, winnerId: string) {
+  const session = await requireAdmin()
+
+  try {
+    const createdById = await resolveDbUserId(session.user.id)
+
+    // Validasi kandidat masih eligible
+    const arisanMember = await prisma.arisanMember.findFirst({
+      where: { periodId, memberId: winnerId, sudahMenang: false },
+    })
+    if (!arisanMember) return { success: false, error: "Anggota tidak eligible atau sudah pernah menang" }
+
+    const periode = await prisma.arisanPeriod.findUnique({ where: { id: periodId } })
+    const totalAnggota = await prisma.arisanMember.count({ where: { periodId } })
+    const nominalHak = Number(periode?.besarIuran ?? 0) * totalAnggota
+
+    await prisma.$transaction(async (tx) => {
+      const draw = await tx.arisanDraw.create({
+        data: {
+          periodId,
+          bulanUndian,
+          tanggalUndian: new Date(),
+          jumlahPemenang: 1,
+          createdBy: createdById,
+        },
+      })
+
+      await tx.arisanWinner.create({
+        data: { drawId: draw.id, memberId: winnerId, nominalHak },
+      })
+
+      await tx.arisanMember.update({
+        where: { id: arisanMember.id },
+        data: { sudahMenang: true, tanggalMenang: new Date() },
+      })
+    })
+
+    const member = await prisma.member.findUnique({ where: { id: winnerId }, select: { namaLengkap: true } })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "arisan",
+      action: "UNDIAN_SPIN",
+      dataBaru: { bulan: bulanUndian, pemenang: member?.namaLengkap },
+    })
+
+    revalidatePath("/arisan/undian")
+    revalidatePath("/arisan/laporan")
+    return { success: true, namaLengkap: member?.namaLengkap }
+  } catch {
+    return { success: false, error: "Gagal menyimpan hasil undian" }
+  }
+}

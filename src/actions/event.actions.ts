@@ -22,6 +22,7 @@ export async function createEvent(formData: FormData) {
   const d = parsed.data
 
   try {
+    const createdById = await resolveDbUserId(session.user.id)
     const event = await prisma.event.create({
       data: {
         namaKegiatan: d.namaKegiatan,
@@ -29,7 +30,7 @@ export async function createEvent(formData: FormData) {
         lokasi: d.lokasi,
         pic: d.pic,
         deskripsi: d.deskripsi,
-        createdBy: session.user.id,
+        createdBy: createdById,
       },
     })
 

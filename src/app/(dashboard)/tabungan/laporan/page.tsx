@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/format"
 import { LaporanTabunganExport } from "@/components/shared/LaporanTabunganExport"
 import { BatchPostingPanel } from "./_components/BatchPostingPanel"
 import { CheckCircle2 } from "lucide-react"
+import { serialize } from "@/lib/serialize"
 
 export default async function LaporanTabunganPage() {
   const session = await requireAuth()

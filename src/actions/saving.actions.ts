@@ -51,7 +51,7 @@ export async function inputTransaksiTabungan(formData: FormData) {
           nominal,
           keterangan: d.keterangan,
           tanggal: new Date(d.tanggal),
-          createdBy: session.user.id,
+          createdBy: createdById,
         },
       }),
       prisma.saving.update({
@@ -96,7 +96,7 @@ export async function saveSavingInterestSetting(formData: FormData) {
         periode: d.periode,
         berlakuMulai: new Date(d.berlakuMulai),
         isActive: true,
-        createdBy: session.user.id,
+        createdBy: createdById,
       },
     })
 
@@ -148,7 +148,7 @@ export async function hitungBungaOtomatis() {
             nomorTransaksi, savingId: s.id, memberId: s.memberId,
             jenis: "BUNGA", nominal: nominalBunga,
             keterangan: `Bunga tabungan ${bulanIni}`,
-            tanggal: new Date(), createdBy: session.user.id,
+            tanggal: new Date(), createdBy: createdById,
           },
         }),
         prisma.saving.update({ where: { id: s.id }, data: { saldo: Number(s.saldo) + nominalBunga } }),

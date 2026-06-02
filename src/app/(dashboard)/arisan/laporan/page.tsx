@@ -5,25 +5,26 @@ import { Card, CardContent } from "@/components/ui/card"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { formatDate, formatCurrency } from "@/lib/format"
 import { LaporanArisanExport } from "@/components/shared/LaporanArisanExport"
+import { serialize } from "@/lib/serialize"
 
 export default async function LaporanArisanPage() {
   await requireAuth()
 
-  const periodes = await prisma.arisanPeriod.findMany({
+  const periodes = serialize(await prisma.arisanPeriod.findMany({
     include: {
       _count: { select: { arisanMembers: true, arisanPayments: true, arisanDraws: true } },
     },
     orderBy: { createdAt: "desc" },
-  })
+  }))
 
-  const winners = await prisma.arisanWinner.findMany({
+  const winners = serialize(await prisma.arisanWinner.findMany({
     include: {
       member: { select: { namaLengkap: true, nomorAnggota: true } },
       draw: { select: { bulanUndian: true, tanggalUndian: true, period: { select: { namaPeriode: true } } } },
     },
     orderBy: { createdAt: "desc" },
     take: 20,
-  })
+  }))
 
   return (
     <div>

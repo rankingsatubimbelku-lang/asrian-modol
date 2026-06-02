@@ -84,7 +84,7 @@ export default async function DashboardPage() {
             icon={<Dices className="w-5 h-5 text-purple-600" />} color="bg-purple-50" href="/arisan/periode" />
           <StatCard title="Kegiatan" value={nextEvent ? formatDate(nextEvent.tanggal) : "-"}
             subtitle={nextEvent?.namaKegiatan ?? "Belum ada jadwal"}
-            icon={<CalendarDays className="w-5 h-5 text-blue-600" />} color="bg-blue-50" href="/kegiatan" />
+            icon={<CalendarDays className="w-5 h-5 text-blue-600" />} color="bg-blue-50 dark:bg-blue-900/30" href="/kegiatan" />
         </div>
 
         {nextAngsuran && (
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Anggota" value={String(totalAnggota)} subtitle="Anggota aktif"
-          icon={<Users className="w-5 h-5 text-blue-600" />} color="bg-blue-50" href="/anggota" />
+          icon={<Users className="w-5 h-5 text-blue-600" />} color="bg-blue-50 dark:bg-blue-900/30" href="/anggota" />
         <StatCard title="Total Tabungan" value={formatCurrency(String(totalTabungan._sum.saldo ?? 0))} subtitle="Semua anggota"
           icon={<PiggyBank className="w-5 h-5 text-green-600" />} color="bg-green-50" href="/tabungan" />
         <StatCard title="Kredit Aktif" value={String(kreditAktif)} subtitle={tunggakan > 0 ? `${tunggakan} menunggak` : "Semua lancar"}

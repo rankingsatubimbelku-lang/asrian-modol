@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, resolveDbUserId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/audit"
 import { createEventSchema } from "@/validations/event.schema"
 

@@ -8,7 +8,7 @@ export default async function AnggotaPage() {
   await requireAdmin()
 
   const members = await prisma.member.findMany({
-    include: { user: { select: { email: true } } },
+    include: { user: { select: { email: true, role: true } } },
     orderBy: { createdAt: "desc" },
   })
 

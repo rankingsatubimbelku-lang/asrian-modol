@@ -26,7 +26,7 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
   const [lastWinner, setLastWinner] = useState<WheelCandidate | null>(null)
 
   const n = candidates.length
-  const SIZE = 320
+  const SIZE = 480
 
   const draw = useCallback((rot: number) => {
     const canvas = canvasRef.current

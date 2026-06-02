@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/layout/ThemeProvider"
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-inter",
   display: "swap",
 })
 

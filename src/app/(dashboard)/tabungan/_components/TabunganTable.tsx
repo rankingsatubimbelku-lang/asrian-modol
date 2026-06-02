@@ -3,9 +3,11 @@
 import { DataTable } from "@/components/shared/DataTable"
 import { formatCurrency, formatDate } from "@/lib/format"
 
+type DecimalLike = { toString(): string } | string | number
+
 type Saving = {
   id: string
-  saldo: string
+  saldo: DecimalLike
   updatedAt: Date | string
   member: { namaLengkap: string; nomorAnggota: string }
 }

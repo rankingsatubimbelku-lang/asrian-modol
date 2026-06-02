@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth"
 
-// Config yang aman untuk Edge Runtime (middleware) — tanpa Prisma & bcryptjs
+// Config aman untuk Edge Runtime (middleware) — tanpa Prisma & bcryptjs
 export const authConfig: NextAuthConfig = {
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   pages: {
@@ -22,9 +22,6 @@ export const authConfig: NextAuthConfig = {
         session.user.role = token.role as string
       }
       return session
-    },
-    authorized({ auth }) {
-      return !!auth?.user
     },
   },
   providers: [],

@@ -75,8 +75,6 @@ export function exportToExcel({
     ...rows,
   ])
 
-  // Style header row (row index 3 = header)
-  const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1")
   ws["!cols"] = columns.map(() => ({ wch: 20 }))
 
   const wb = XLSX.utils.book_new()

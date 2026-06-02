@@ -154,20 +154,15 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
     const target = rotationRef.current + fullSpins + extra
     // =======================================================
 
-    // Durasi lebih panjang + easing lebih lambat di akhir
-    const duration = 6000 + Math.random() * 2000  // 6-8 detik
+    // Durasi 5-7 detik
+    const duration = 5000 + Math.random() * 2000
     const start = performance.now()
     const startRot = rotationRef.current
 
-    // Ease-out dengan power tinggi = melambat dramatis di 20% akhir
+    // Smooth ease-out tunggal (TIDAK piecewise) — monoton, tidak ada lompatan kecepatan
+    // Power 6: cepat di awal, melambat panjang di akhir, tanpa akselerasi di tengah
     function easeOut(p: number): number {
-      if (p < 0.75) {
-        // 75% pertama: ease-out normal
-        return 0.85 * (1 - Math.pow(1 - p / 0.75, 4))
-      }
-      // 25% terakhir: sangat lambat (terlihat "hampir berhenti")
-      const q = (p - 0.75) / 0.25
-      return 0.85 + 0.15 * (1 - Math.pow(1 - q, 3))
+      return 1 - Math.pow(1 - p, 6)
     }
 
     function animate(now: number) {

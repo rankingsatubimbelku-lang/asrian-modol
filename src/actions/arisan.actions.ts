@@ -38,7 +38,7 @@ export async function createPeriode(formData: FormData) {
           besarIuran: parseFloat(d.besarIuran),
           maxPemenangPerBulan: parseInt(d.maxPemenangPerBulan),
           status: "DRAFT",
-          createdBy: session.user.id,
+          createdBy: createdById,
         },
       })
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Users, PiggyBank, CreditCard, Dices,
-  TrendingUp, AlertCircle, CalendarDays, ArrowUpRight,
+  TrendingUp, AlertCircle, CalendarDays,
 } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/format"
 import Link from "next/link"

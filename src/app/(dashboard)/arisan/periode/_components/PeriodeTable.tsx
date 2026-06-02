@@ -44,6 +44,14 @@ export function PeriodeTable({ periodes }: { periodes: Periode[] }) {
     { key: "tanggalSelesai", label: "Selesai", render: (r: Periode) => formatDate(r.tanggalSelesai) },
     { key: "besarIuran", label: "Iuran/Bln", render: (r: Periode) => formatCurrency(String(r.besarIuran)) },
     { key: "anggota", label: "Anggota", render: (r: Periode) => r._count.arisanMembers },
+    {
+      key: "maxPemenang", label: "Max Pemenang/Bln",
+      render: (r: Periode) => (
+        <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+          🏆 {r.maxPemenangPerBulan} orang
+        </span>
+      ),
+    },
     { key: "status", label: "Status", render: (r: Periode) => <StatusBadge status={r.status} /> },
     { key: "aksi", label: "Aksi", render: (r: Periode) => (
       <div className="flex gap-1">

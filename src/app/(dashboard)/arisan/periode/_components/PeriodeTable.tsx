@@ -16,6 +16,7 @@ type Periode = {
   tanggalMulai: Date
   tanggalSelesai: Date
   besarIuran: unknown
+  maxPemenangPerBulan: number
   status: string
   _count: { arisanMembers: number; arisanPayments: number }
 }

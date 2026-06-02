@@ -214,7 +214,7 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
   if (n === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-8">
-        <div className="w-72 h-72 rounded-full bg-gray-100 flex items-center justify-center border-4 border-gray-200">
+        <div className="w-96 h-96 rounded-full bg-gray-100 flex items-center justify-center border-4 border-gray-200">
           <p className="text-sm text-gray-400 text-center px-8">Tidak ada kandidat eligible</p>
         </div>
       </div>
@@ -233,7 +233,7 @@ export function SpinWheel({ candidates, onWinner, disabled }: SpinWheelProps) {
           className={`rounded-full shadow-2xl transition-opacity ${
             spinning || disabled ? "cursor-wait opacity-90" : "cursor-pointer hover:opacity-95"
           }`}
-          style={{ maxWidth: "min(320px, 90vw)", maxHeight: "min(320px, 90vw)" }}
+          style={{ maxWidth: "min(480px, 65vw)", maxHeight: "min(480px, 65vw)" }}
         />
         {/* Pointer arrow — kanan tengah */}
         <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-10">

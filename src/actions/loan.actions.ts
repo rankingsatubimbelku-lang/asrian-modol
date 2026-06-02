@@ -112,7 +112,7 @@ export async function approveLoan(loanId: string, formData: FormData) {
     if (keputusan === "REJECT") {
       await prisma.loan.update({
         where: { id: loanId },
-        data: { status: "DITOLAK", catatanApproval: catatan, approvedBy: session.user.id, tanggalDisetujui: new Date() },
+        data: { status: "DITOLAK", catatanApproval: catatan, approvedBy: approvedById, tanggalDisetujui: new Date() },
       })
       revalidatePath("/kredit/approval")
       return { success: true }
@@ -133,7 +133,7 @@ export async function approveLoan(loanId: string, formData: FormData) {
         data: {
           status: "DISETUJUI",
           catatanApproval: catatan,
-          approvedBy: session.user.id,
+          approvedBy: approvedById,
           tanggalDisetujui: new Date(),
         },
       }),

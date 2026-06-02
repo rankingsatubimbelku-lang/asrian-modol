@@ -179,6 +179,42 @@ export async function toggleMemberStatus(id: string) {
   }
 }
 
+export async function setMemberRole(id: string, role: "ANGGOTA" | "ADMIN" | "SUPER_ADMIN") {
+  const session = await requireAdmin()
+
+  // Hanya Super Admin yang boleh set role
+  if (session.user.role !== "SUPER_ADMIN") {
+    return { success: false, error: "Hanya Super Admin yang dapat mengubah role" }
+  }
+
+  try {
+    const member = await prisma.member.findUnique({
+      where: { id },
+      select: { userId: true, namaLengkap: true },
+    })
+    if (!member) return { success: false, error: "Anggota tidak ditemukan" }
+
+    await prisma.user.update({
+      where: { id: member.userId },
+      data: { role },
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "members",
+      action: "SET_ROLE",
+      entityId: id,
+      dataBaru: { role },
+    })
+
+    revalidatePath("/anggota")
+    revalidatePath(`/anggota/${id}`)
+    return { success: true }
+  } catch {
+    return { success: false, error: "Gagal mengubah role" }
+  }
+}
+
 export async function resetMemberPassword(id: string, newPassword: string) {
   const session = await requireAdmin()
 

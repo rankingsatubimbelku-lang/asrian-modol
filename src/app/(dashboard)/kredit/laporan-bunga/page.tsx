@@ -44,7 +44,7 @@ export default async function LaporanBungaPage({
   // Group by bulan (YYYY-MM dari tanggalBayar)
   const summaryMap = new Map<string, MonthSummary>()
   for (const inst of lunas) {
-    const bulanKey = new Date(inst.tanggalBayar as string).toISOString().slice(0, 7)
+    const bulanKey = new Date(String(inst.tanggalBayar)).toISOString().slice(0, 7)
     const existing = summaryMap.get(bulanKey) ?? {
       bulan: bulanKey, jumlahAngsuran: 0, totalPokok: 0, totalBunga: 0, totalDenda: 0, totalDiterima: 0,
     }

@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   DISETUJUI: "Disetujui",
   DITOLAK: "Ditolak",
   BELUM_BAYAR: "Belum Bayar",
+  SEBAGIAN: "Sebagian",
   TERLAMBAT: "Terlambat",
 }
 

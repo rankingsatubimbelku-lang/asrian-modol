@@ -329,7 +329,7 @@ export async function bayarAngsuranFleksibel(loanId: string, nominalBayar: numbe
           data: { status: "LUNAS", tanggalLunas: tglBayar },
         })
       }
-    })
+    }, { timeout: 20000 }) // NeonDB cold-start bisa >5s; default timeout 5000ms tidak cukup
 
     await logActivity({
       userId: session.user.id,

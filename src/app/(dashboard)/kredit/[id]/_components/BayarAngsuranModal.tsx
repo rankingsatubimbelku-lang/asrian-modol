@@ -68,13 +68,14 @@ export function BayarAngsuranModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+      {/* span display:contents agar tidak mengganggu layout, klik membuka dialog */}
+      <span className="contents" onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button className="bg-green-600 hover:bg-green-700">
             <Wallet className="w-4 h-4 mr-1.5" />Bayar Angsuran
           </Button>
         )}
-      </DialogTrigger>
+      </span>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Catat Pembayaran Angsuran</DialogTitle>

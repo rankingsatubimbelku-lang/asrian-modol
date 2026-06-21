@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { catatPembayaranBulanan } from "@/actions/loan.actions"
 import { pecahPembayaranBulanan } from "@/lib/calculations/installment"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

@@ -217,6 +217,141 @@ export async function bayarAngsuran(formData: FormData) {
   }
 }
 
+/**
+ * Pembayaran fleksibel — anggota bebas membayar berapa pun nominalnya.
+ * Bunga & pokok per angsuran TETAP mengikuti jadwal awal (FLAT/EFEKTIF), tidak dihitung ulang.
+ * Pembayaran dialokasikan ke angsuran TERTUA (belum lunas) lebih dulu; sisa otomatis
+ * mengalir ke angsuran berikutnya. Mendukung pembayaran parsial (status SEBAGIAN).
+ */
+export async function bayarAngsuranFleksibel(loanId: string, nominalBayar: number, tanggalBayar: string, keterangan?: string) {
+  const session = await requireAdmin()
+
+  if (!nominalBayar || nominalBayar <= 0) {
+    return { success: false, error: "Nominal pembayaran harus lebih dari 0" }
+  }
+
+  try {
+    const createdById = await resolveDbUserId(session.user.id)
+
+    const loan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      include: {
+        interestSetting: true,
+        installments: { where: { status: { not: "LUNAS" } }, orderBy: { ke: "asc" } },
+      },
+    })
+    if (!loan) return { success: false, error: "Kredit tidak ditemukan" }
+    if (loan.status !== "DISETUJUI") return { success: false, error: "Kredit tidak dalam status aktif" }
+    if (loan.installments.length === 0) return { success: false, error: "Semua angsuran sudah lunas" }
+
+    const tglBayar = new Date(tanggalBayar)
+    let sisaBayar = nominalBayar
+
+    const instUpdates: {
+      id: string
+      nominalDibayar: number
+      status: "SEBAGIAN" | "LUNAS"
+      denda: number
+      tanggalBayar?: Date
+    }[] = []
+    const paymentRows: { installmentId: string; nominal: number }[] = []
+
+    for (const inst of loan.installments) {
+      if (sisaBayar <= 0) break
+
+      const totalTagihanPokokBunga = Number(inst.nominalPokok) + Number(inst.nominalBunga)
+      const sudahDibayar = Number(inst.nominalDibayar)
+
+      // Denda dihitung berdasarkan tanggal jatuh tempo asli — tidak berubah oleh nominal bayar
+      const denda = tglBayar > inst.tanggalJatuhTempo
+        ? hitungDenda({
+            nominalAngsuran: totalTagihanPokokBunga,
+            dendaPerHari: Number(loan.interestSetting.dendaPerHari),
+            tanggalJatuhTempo: inst.tanggalJatuhTempo,
+            tanggalBayar: tglBayar,
+          })
+        : Number(inst.denda)
+
+      const totalTagihanInst = totalTagihanPokokBunga + denda
+      const sisaTagihanInst = totalTagihanInst - sudahDibayar
+      if (sisaTagihanInst <= 0) continue
+
+      const bayarUntukIni = Math.min(sisaBayar, sisaTagihanInst)
+      const dibayarBaru = sudahDibayar + bayarUntukIni
+      const lunas = dibayarBaru >= totalTagihanInst - 1 // toleransi rounding 1 rupiah
+
+      instUpdates.push({
+        id: inst.id,
+        nominalDibayar: dibayarBaru,
+        status: lunas ? "LUNAS" : "SEBAGIAN",
+        denda,
+        tanggalBayar: lunas ? tglBayar : undefined,
+      })
+      paymentRows.push({ installmentId: inst.id, nominal: bayarUntukIni })
+      sisaBayar -= bayarUntukIni
+    }
+
+    if (paymentRows.length === 0) {
+      return { success: false, error: "Tidak ada angsuran yang bisa dialokasikan" }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const u of instUpdates) {
+        await tx.loanInstallment.update({
+          where: { id: u.id },
+          data: {
+            nominalDibayar: u.nominalDibayar,
+            status: u.status,
+            denda: u.denda,
+            ...(u.tanggalBayar ? { tanggalBayar: u.tanggalBayar } : {}),
+          },
+        })
+      }
+      for (const p of paymentRows) {
+        await tx.loanPayment.create({
+          data: {
+            loanId,
+            installmentId: p.installmentId,
+            nominal: p.nominal,
+            tanggalBayar: tglBayar,
+            keterangan,
+            createdBy: createdById,
+          },
+        })
+      }
+
+      const sisaBelumLunas = await tx.loanInstallment.count({
+        where: { loanId, status: { not: "LUNAS" } },
+      })
+      if (sisaBelumLunas === 0) {
+        await tx.loan.update({
+          where: { id: loanId },
+          data: { status: "LUNAS", tanggalLunas: tglBayar },
+        })
+      }
+    })
+
+    await logActivity({
+      userId: session.user.id,
+      module: "kredit",
+      action: "BAYAR_ANGSURAN_FLEKSIBEL",
+      entityId: loanId,
+      dataBaru: { nominalBayar, dialokasikanKe: paymentRows.length, kelebihan: sisaBayar },
+    })
+
+    revalidatePath(`/kredit/${loanId}`)
+    revalidatePath("/kredit")
+    return {
+      success: true,
+      dialokasikanKe: paymentRows.length,
+      kelebihan: sisaBayar > 0 ? sisaBayar : 0,
+    }
+  } catch (e) {
+    console.error(e)
+    return { success: false, error: "Gagal mencatat pembayaran" }
+  }
+}
+
 export async function pelunasanAwal(loanId: string, tanggalLunas: string) {
   const session = await requireAdmin()
 

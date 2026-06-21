@@ -37,7 +37,7 @@ export function generateNomorAnggota(): string {
   return `MBR-${ym}-${seq}`
 }
 
-export function generateNomorTransaksi(prefix: "SAV" | "LN"): string {
+export function generateNomorTransaksi(prefix: "SAV" | "LN" | "TRX"): string {
   const ymd = format(new Date(), "yyyyMMdd")
   const seq = Math.floor(Math.random() * 9000 + 1000)
   return `${prefix}-${ymd}-${seq}`

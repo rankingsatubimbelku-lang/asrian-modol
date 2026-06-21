@@ -51,7 +51,7 @@ export async function createPeriode(formData: FormData) {
       }
 
       return p
-    })
+    }, { timeout: 20000 })
 
     await logActivity({
       userId: session.user.id,

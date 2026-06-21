@@ -12,7 +12,6 @@ export default async function KreditPage() {
   const includeOpts = {
     member: { select: { namaLengkap: true, nomorAnggota: true } },
     interestSetting: { select: { persentase: true, metode: true } },
-    installments: { select: { nominalPokok: true, nominalBunga: true, denda: true, nominalDibayar: true } },
   }
 
   const rawLoans = isAdmin
@@ -26,14 +25,7 @@ export default async function KreditPage() {
         orderBy: { createdAt: "desc" },
       })
 
-  const loans = serialize(rawLoans).map(loan => {
-    const sisaPinjaman = loan.installments.reduce((acc, i) => {
-      const totalTagihan = Number(i.nominalPokok) + Number(i.nominalBunga) + Number(i.denda)
-      const dibayar = Number(i.nominalDibayar)
-      return acc + Math.max(0, totalTagihan - dibayar)
-    }, 0)
-    return { ...loan, sisaPinjaman }
-  })
+  const loans = serialize(rawLoans)
 
   return (
     <div>

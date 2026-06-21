@@ -89,8 +89,9 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
 
         {/* Stats angsuran */}
         {loan.installments.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
+              { label: "Sisa Pinjaman", value: formatCurrency(sisaTotalTagihan), color: sisaTotalTagihan > 0 ? "text-orange-600" : "text-green-600" },
               { label: "Sudah Lunas", value: `${sudahBayar}/${loan.tenor}`, color: "text-green-600" },
               { label: "Sisa Angsuran", value: sisaAngsuran, color: "text-orange-600" },
               { label: "Total Denda", value: formatCurrency(totalDenda), color: "text-red-600" },

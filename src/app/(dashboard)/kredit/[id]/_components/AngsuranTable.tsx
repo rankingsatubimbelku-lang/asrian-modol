@@ -1,15 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { bayarAngsuran } from "@/actions/loan.actions"
 import { StatusBadge } from "@/components/shared/StatusBadge"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { formatCurrency, formatDate } from "@/lib/format"
-import { CreditCard } from "lucide-react"
 import type { Decimal } from "@prisma/client/runtime/library"
 
 type Installment = {
@@ -19,85 +11,56 @@ type Installment = {
   tanggalBayar: Date | null
   nominalPokok: Decimal
   nominalBunga: Decimal
+  nominalDibayar: Decimal
   denda: Decimal
   status: string
 }
 
 export function AngsuranTable({
-  installments, isAdmin, loanStatus,
+  installments,
 }: { installments: Installment[]; isAdmin: boolean; loanStatus: string }) {
-  const router = useRouter()
-  const [tanggalBayar, setTanggalBayar] = useState(new Date().toISOString().split("T")[0])
-
-  async function handleBayar(id: string) {
-    const fd = new FormData()
-    fd.append("installmentId", id)
-    fd.append("tanggalBayar", tanggalBayar)
-    const r = await bayarAngsuran(fd)
-    if (r.success) {
-      toast.success(r.denda && r.denda > 0
-        ? `Angsuran lunas. Denda: ${formatCurrency(r.denda)}`
-        : "Angsuran berhasil dicatat lunas")
-      router.refresh()
-    } else {
-      toast.error(r.error)
-    }
-  }
-
   const today = new Date()
 
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Jadwal Angsuran</h3>
-      <div className="overflow-x-auto rounded-lg border bg-white">
+      <p className="text-xs text-gray-400 mb-3">
+        Bunga &amp; pokok tetap sesuai jadwal awal. Pembayaran dialokasikan otomatis ke angsuran tertua lebih dulu.
+      </p>
+      <div className="overflow-x-auto rounded-lg border dark:border-white/10 bg-white dark:bg-gray-900">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-800/60">
             <tr>
-              {["Ke-", "Jatuh Tempo", "Pokok", "Bunga", "Denda", "Total", "Status", isAdmin && loanStatus === "DISETUJUI" ? "Bayar" : ""].filter(Boolean).map(h => (
-                <th key={h as string} className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+              {["Ke-", "Jatuh Tempo", "Pokok", "Bunga", "Denda", "Total Tagihan", "Dibayar", "Sisa", "Status"].map(h => (
+                <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {installments.map(row => {
               const isLate = row.status !== "LUNAS" && new Date(row.tanggalJatuhTempo) < today
-              const total = Number(row.nominalPokok) + Number(row.nominalBunga)
+              const totalTagihan = Number(row.nominalPokok) + Number(row.nominalBunga) + Number(row.denda)
+              const dibayar = Number(row.nominalDibayar)
+              const sisa = Math.max(0, totalTagihan - dibayar)
+              const displayStatus = isLate && row.status === "BELUM_BAYAR" ? "TERLAMBAT" : row.status
+
               return (
-                <tr key={row.id} className={`border-t ${isLate ? "bg-red-50" : ""}`}>
-                  <td className="px-3 py-2.5 font-medium">{row.ke}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{formatDate(row.tanggalJatuhTempo)}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{formatCurrency(String(row.nominalPokok))}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{formatCurrency(String(row.nominalBunga))}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-red-600">
+                <tr key={row.id} className={`border-t dark:border-white/10 ${isLate && row.status !== "LUNAS" ? "bg-red-50 dark:bg-red-950/20" : ""}`}>
+                  <td className="px-3 py-2.5 font-medium dark:text-gray-200">{row.ke}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap dark:text-gray-300">{formatDate(row.tanggalJatuhTempo)}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap dark:text-gray-300">{formatCurrency(String(row.nominalPokok))}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap dark:text-gray-300">{formatCurrency(String(row.nominalBunga))}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-red-600 dark:text-red-400">
                     {Number(row.denda) > 0 ? formatCurrency(String(row.denda)) : "-"}
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap font-semibold">{formatCurrency(total + Number(row.denda))}</td>
-                  <td className="px-3 py-2.5"><StatusBadge status={isLate && row.status !== "LUNAS" ? "TERLAMBAT" : row.status} /></td>
-                  {isAdmin && loanStatus === "DISETUJUI" && (
-                    <td className="px-3 py-2.5">
-                      {row.status !== "LUNAS" && (
-                        <div className="flex items-center gap-1.5">
-                          <Input
-                            type="date"
-                            defaultValue={tanggalBayar}
-                            onChange={e => setTanggalBayar(e.target.value)}
-                            className="h-7 text-xs w-32"
-                          />
-                          <ConfirmDialog
-                            trigger={
-                              <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700">
-                                <CreditCard className="w-3 h-3 mr-1" />Bayar
-                              </Button>
-                            }
-                            title="Konfirmasi Pembayaran"
-                            description={`Catat pembayaran angsuran ke-${row.ke}? ${isLate ? "Denda keterlambatan akan dihitung otomatis." : ""}`}
-                            actionLabel="Konfirmasi Bayar"
-                            onConfirm={() => handleBayar(row.id)}
-                          />
-                        </div>
-                      )}
-                    </td>
-                  )}
+                  <td className="px-3 py-2.5 whitespace-nowrap font-semibold dark:text-gray-100">{formatCurrency(totalTagihan)}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-green-600 dark:text-green-400">
+                    {dibayar > 0 ? formatCurrency(dibayar) : "-"}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap font-medium">
+                    {sisa > 0 ? <span className="text-orange-600 dark:text-orange-400">{formatCurrency(sisa)}</span> : <span className="text-gray-400">Lunas</span>}
+                  </td>
+                  <td className="px-3 py-2.5"><StatusBadge status={displayStatus} /></td>
                 </tr>
               )
             })}

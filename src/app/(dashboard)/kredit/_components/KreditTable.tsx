@@ -16,6 +16,7 @@ type Loan = {
   tenor: number
   status: string
   tanggalPengajuan: Date | string
+  sisaPinjaman: number
   member: { namaLengkap: string; nomorAnggota: string }
   interestSetting: { persentase: DecimalLike; metode: string }
 }
@@ -33,9 +34,21 @@ export function KreditTable({ loans }: { loans: Loan[] }) {
       ),
     },
     {
-      key: "nominal", label: "Nominal",
+      key: "nominal", label: "Pinjaman Awal",
       render: (r: Loan) => (
         <span className="font-semibold">{formatCurrency(r.nominalPinjaman)}</span>
+      ),
+    },
+    {
+      key: "sisaPinjaman", label: "Sisa Pinjaman",
+      render: (r: Loan) => (
+        r.status === "DISETUJUI" ? (
+          <span className={`font-semibold ${r.sisaPinjaman > 0 ? "text-orange-600" : "text-green-600"}`}>
+            {formatCurrency(r.sisaPinjaman)}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-xs">-</span>
+        )
       ),
     },
     { key: "tenor", label: "Tenor", render: (r: Loan) => `${r.tenor} bln` },

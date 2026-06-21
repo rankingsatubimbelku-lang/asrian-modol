@@ -159,8 +159,6 @@ export async function catatPembayaranBulanan(formData: FormData) {
   }
 
   try {
-    const createdById = await resolveDbUserId(session.user.id)
-
     const loan = await prisma.loan.findUnique({
       where: { id: d.loanId },
       include: { interestSetting: true, _count: { select: { installments: true } } },

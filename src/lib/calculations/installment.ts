@@ -78,3 +78,47 @@ export function hitungTotalPinjaman(rows: InstallmentRow[]) {
     totalCicilan: acc.totalCicilan + r.totalCicilan,
   }), { totalPokok: 0, totalBunga: 0, totalCicilan: 0 })
 }
+
+/**
+ * Hitung bunga untuk SATU bulan pembayaran pada sistem saldo berjalan (running balance).
+ * Bunga tetap mengikuti metode (FLAT/EFEKTIF) yang disepakati saat pengajuan,
+ * tapi jumlah angsuran/bulan TIDAK perlu ditentukan di awal — fleksibel sampai pokok lunas.
+ *
+ * - FLAT   : bunga dihitung dari nominal pinjaman AWAL (tetap tiap bulan)
+ * - EFEKTIF: bunga dihitung dari SISA POKOK saat ini (menurun setiap bulan)
+ */
+export function hitungBungaBulanan({
+  metode, persentasePerTahun, nominalPinjamanAwal, sisaPokok,
+}: {
+  metode: "FLAT" | "EFEKTIF"
+  persentasePerTahun: number
+  nominalPinjamanAwal: number
+  sisaPokok: number
+}): number {
+  const bungaPerBulan = persentasePerTahun / 100 / 12
+  const basis = metode === "FLAT" ? nominalPinjamanAwal : sisaPokok
+  return Math.round(basis * bungaPerBulan)
+}
+
+/**
+ * Pecah satu pembayaran bulanan menjadi komponen bunga (fixed sesuai metode) & pokok.
+ * Jika nominal bayar < bunga bulan ini, seluruh nominal dianggap bunga & pokok = 0.
+ * Pokok tidak akan pernah melebihi sisaPokok (otomatis capped saat pelunasan).
+ */
+export function pecahPembayaranBulanan({
+  nominalBayar, metode, persentasePerTahun, nominalPinjamanAwal, sisaPokok,
+}: {
+  nominalBayar: number
+  metode: "FLAT" | "EFEKTIF"
+  persentasePerTahun: number
+  nominalPinjamanAwal: number
+  sisaPokok: number
+}) {
+  const bunga = Math.min(
+    hitungBungaBulanan({ metode, persentasePerTahun, nominalPinjamanAwal, sisaPokok }),
+    nominalBayar
+  )
+  const pokok = Math.min(nominalBayar - bunga, sisaPokok)
+  const sisaPokokBaru = Math.max(0, sisaPokok - pokok)
+  return { bunga, pokok, sisaPokokBaru }
+}

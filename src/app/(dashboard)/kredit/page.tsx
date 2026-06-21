@@ -9,24 +9,31 @@ export default async function KreditPage() {
   const session = await requireAuth()
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role)
 
-  const loans = serialize(isAdmin
+  const includeOpts = {
+    member: { select: { namaLengkap: true, nomorAnggota: true } },
+    interestSetting: { select: { persentase: true, metode: true } },
+    installments: { select: { nominalPokok: true, nominalBunga: true, denda: true, nominalDibayar: true } },
+  }
+
+  const rawLoans = isAdmin
     ? await prisma.loan.findMany({
-        include: {
-          member: { select: { namaLengkap: true, nomorAnggota: true } },
-          interestSetting: { select: { persentase: true, metode: true } },
-          _count: { select: { installments: true } },
-        },
+        include: includeOpts,
         orderBy: { createdAt: "desc" },
       })
     : await prisma.loan.findMany({
         where: { member: { userId: session.user.id } },
-        include: {
-          member: { select: { namaLengkap: true, nomorAnggota: true } },
-          interestSetting: { select: { persentase: true, metode: true } },
-          _count: { select: { installments: true } },
-        },
+        include: includeOpts,
         orderBy: { createdAt: "desc" },
-      }))
+      })
+
+  const loans = serialize(rawLoans).map(loan => {
+    const sisaPinjaman = loan.installments.reduce((acc, i) => {
+      const totalTagihan = Number(i.nominalPokok) + Number(i.nominalBunga) + Number(i.denda)
+      const dibayar = Number(i.nominalDibayar)
+      return acc + Math.max(0, totalTagihan - dibayar)
+    }, 0)
+    return { ...loan, sisaPinjaman }
+  })
 
   return (
     <div>

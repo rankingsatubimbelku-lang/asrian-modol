@@ -74,6 +74,15 @@ const navItems: NavItem[] = [
     roles: ["SUPER_ADMIN", "ADMIN", "ANGGOTA"],
   },
   {
+    label: "Transaksi",
+    icon: <Receipt className="w-5 h-5" />,
+    roles: ["SUPER_ADMIN", "ADMIN"],
+    children: [
+      { label: "Daftar Transaksi", href: "/transaksi" },
+      { label: "Tambah Transaksi", href: "/transaksi/tambah" },
+    ],
+  },
+  {
     label: "Pengaturan",
     icon: <Settings className="w-5 h-5" />,
     roles: ["SUPER_ADMIN", "ADMIN"],

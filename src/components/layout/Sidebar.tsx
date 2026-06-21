@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Users, Dices, PiggyBank, CreditCard,
-  CalendarDays, Settings, ChevronDown, ChevronRight, Wallet,
+  CalendarDays, Settings, ChevronDown, ChevronRight, Wallet, Receipt,
 } from "lucide-react"
 import { useState } from "react"
 

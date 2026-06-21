@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { AngsuranTable } from "./_components/AngsuranTable"
 import { PelunasanButton } from "./_components/PelunasanButton"
-import { BayarFleksibelForm } from "./_components/BayarFleksibelForm"
+import { BayarAngsuranModal } from "./_components/BayarAngsuranModal"
 import { serialize } from "@/lib/serialize"
 
 export default async function KreditDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,14 +28,9 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role)
 
-  const sudahBayar = loan.installments.filter(i => i.status === "LUNAS").length
-  const totalDenda = loan.installments.reduce((acc, i) => acc + Number(i.denda), 0)
-  const sisaAngsuran = loan.installments.filter(i => i.status !== "LUNAS").length
-  const sisaTotalTagihan = loan.installments.reduce((acc, i) => {
-    const totalTagihan = Number(i.nominalPokok) + Number(i.nominalBunga) + Number(i.denda)
-    const dibayar = Number(i.nominalDibayar)
-    return acc + Math.max(0, totalTagihan - dibayar)
-  }, 0)
+  const totalPembayaran = loan.installments.length
+  const totalBungaDiterima = loan.installments.reduce((acc, i) => acc + Number(i.nominalBunga), 0)
+  const sisaPokok = loan.status === "LUNAS" ? 0 : Number(loan.sisaPokok ?? loan.nominalPinjaman)
 
   return (
     <div>
@@ -56,7 +51,7 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={loan.status} />
-                {loan.status === "DISETUJUI" && isAdmin && sisaAngsuran > 0 && (
+                {loan.status === "DISETUJUI" && isAdmin && (
                   <PelunasanButton loanId={id} />
                 )}
               </div>
@@ -65,7 +60,7 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               {[
                 { label: "Nominal Pinjaman", value: formatCurrency(String(loan.nominalPinjaman)) },
-                { label: "Tenor", value: `${loan.tenor} bulan` },
+                { label: "Estimasi Tenor", value: `${loan.tenor} bulan` },
                 { label: "Bunga", value: `${loan.interestSetting.persentase}%/thn (${loan.interestSetting.metode})` },
                 { label: "Tgl Pengajuan", value: formatDate(loan.tanggalPengajuan) },
                 { label: "Tgl Disetujui", value: loan.tanggalDisetujui ? formatDate(loan.tanggalDisetujui) : "-" },
@@ -87,43 +82,40 @@ export default async function KreditDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
 
-        {/* Stats angsuran */}
-        {loan.installments.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Sisa Pinjaman", value: formatCurrency(sisaTotalTagihan), color: sisaTotalTagihan > 0 ? "text-orange-600" : "text-green-600" },
-              { label: "Sudah Lunas", value: `${sudahBayar}/${loan.tenor}`, color: "text-green-600" },
-              { label: "Sisa Angsuran", value: sisaAngsuran, color: "text-orange-600" },
-              { label: "Total Denda", value: formatCurrency(totalDenda), color: "text-red-600" },
-            ].map(({ label, value, color }) => (
-              <Card key={label} className="border-0 shadow-sm">
-                <CardContent className="pt-3 pb-3 text-center">
-                  <p className={`text-lg font-bold ${color}`}>{value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Sisa Pinjaman", value: formatCurrency(sisaPokok), color: sisaPokok > 0 ? "text-orange-600" : "text-green-600" },
+            { label: "Jumlah Pembayaran", value: totalPembayaran, color: "text-blue-600" },
+            { label: "Total Bunga Diterima", value: formatCurrency(totalBungaDiterima), color: "text-purple-600" },
+          ].map(({ label, value, color }) => (
+            <Card key={label} className="border-0 shadow-sm">
+              <CardContent className="pt-3 pb-3 text-center">
+                <p className={`text-lg font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        {/* Form pembayaran fleksibel */}
-        {isAdmin && loan.status === "DISETUJUI" && sisaAngsuran > 0 && (
-          <BayarFleksibelForm loanId={id} sisaTotalTagihan={sisaTotalTagihan} />
-        )}
-
-        {/* Jadwal angsuran */}
-        {loan.installments.length > 0 && (
-          <AngsuranTable
-            installments={loan.installments}
-            isAdmin={isAdmin}
-            loanStatus={loan.status}
+        {/* Tombol bayar — modal */}
+        {isAdmin && loan.status === "DISETUJUI" && (
+          <BayarAngsuranModal
+            loanId={id}
+            metode={loan.interestSetting.metode as "FLAT" | "EFEKTIF"}
+            persentasePerTahun={Number(loan.interestSetting.persentase)}
+            nominalPinjamanAwal={Number(loan.nominalPinjaman)}
+            sisaPokok={sisaPokok}
           />
         )}
+
+        {/* Riwayat pembayaran */}
+        <AngsuranTable installments={loan.installments} />
 
         {loan.status === "MENUNGGU_PERSETUJUAN" && (
           <Card className="border-0 shadow-sm bg-amber-50 dark:bg-amber-950/30">
             <CardContent className="py-4 text-center text-sm text-amber-700 dark:text-amber-400">
-              Kredit menunggu approval. Jadwal angsuran akan dibuat setelah disetujui.
+              Kredit menunggu approval.
             </CardContent>
           </Card>
         )}

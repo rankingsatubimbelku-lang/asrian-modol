@@ -388,3 +388,22 @@ model ActivityLog {
 
   @@map("activity_logs")
 }
+
+// Transaksi kas umum — pemasukan & pengeluaran di luar tabungan & kredit.
+// Menjadi basis pencatatan jurnal pada PRD neraca (dikerjakan terpisah).
+model GeneralTransaction {
+  id             String          @id @default(uuid())
+  nomorTransaksi String          @unique @map("nomor_transaksi")
+  jenis          TransactionType
+  kategori       String
+  nominal        Decimal         @db.Decimal(15, 2)
+  tanggal        DateTime        @db.Date
+  keterangan     String?
+  createdBy      String          @map("created_by")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("general_transactions")
+}

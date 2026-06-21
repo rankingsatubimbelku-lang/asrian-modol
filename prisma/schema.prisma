@@ -316,12 +316,15 @@ model LoanInstallment {
   tanggalBayar     DateTime?         @map("tanggal_bayar") @db.Date
   nominalPokok     Decimal           @map("nominal_pokok") @db.Decimal(15, 2)
   nominalBunga     Decimal           @map("nominal_bunga") @db.Decimal(15, 2)
+  // Akumulasi nominal yang sudah dibayar untuk angsuran ini (mendukung bayar bebas/parsial)
+  nominalDibayar   Decimal           @default(0) @map("nominal_dibayar") @db.Decimal(15, 2)
   denda            Decimal           @default(0) @db.Decimal(15, 2)
   status           InstallmentStatus @default(BELUM_BAYAR)
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
-  loan Loan @relation(fields: [loanId], references: [id])
+  loan     Loan          @relation(fields: [loanId], references: [id])
+  payments LoanPayment[]
 
   @@map("loan_installments")
 }

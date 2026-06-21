@@ -58,6 +58,7 @@ enum LoanStatus {
 
 enum InstallmentStatus {
   BELUM_BAYAR
+  SEBAGIAN
   LUNAS
   TERLAMBAT
 }

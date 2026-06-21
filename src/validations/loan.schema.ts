@@ -20,9 +20,11 @@ export const approvalLoanSchema = z.object({
   catatanApproval: z.string().optional(),
 })
 
-export const bayarAngsuranSchema = z.object({
-  installmentId: z.string().min(1),
+export const pembayaranBulananSchema = z.object({
+  loanId: z.string().min(1),
+  nominalBayar: z.string().min(1, "Nominal bayar wajib diisi"),
   tanggalBayar: z.string().min(1, "Tanggal bayar wajib diisi"),
+  keterangan: z.string().optional(),
 })
 
 export type LoanInterestSettingInput = z.infer<typeof loanInterestSettingSchema>

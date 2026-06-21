@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
       { label: "Approval", href: "/kredit/approval" },
       { label: "Input Angsuran", href: "/kredit/angsuran" },
       { label: "Laporan", href: "/kredit/laporan" },
+      { label: "Pendapatan Bunga", href: "/kredit/laporan-bunga" },
     ],
   },
   {

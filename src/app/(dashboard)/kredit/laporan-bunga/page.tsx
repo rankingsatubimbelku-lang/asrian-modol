@@ -68,7 +68,7 @@ export default async function LaporanBungaPage({
 
   // Detail per bulan jika difilter
   const detailBulan = filterBulan
-    ? lunas.filter(i => new Date(i.tanggalBayar as string).toISOString().slice(0, 7) === filterBulan)
+    ? lunas.filter(i => new Date(String(i.tanggalBayar)).toISOString().slice(0, 7) === filterBulan)
     : []
 
   return (

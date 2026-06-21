@@ -304,8 +304,27 @@ model Loan {
   approver        User?               @relation("LoanApprovedBy", fields: [approvedBy], references: [id])
   creator         User                @relation("LoanCreatedBy", fields: [createdBy], references: [id])
   installments    LoanInstallment[]
+  payments        LoanPayment[]
 
   @@map("loans")
+}
+
+// Riwayat tiap kali anggota membayar — nominal bebas, dialokasikan ke angsuran tertua dulu
+model LoanPayment {
+  id            String   @id @default(uuid())
+  loanId        String   @map("loan_id")
+  installmentId String   @map("installment_id")
+  nominal       Decimal  @db.Decimal(15, 2)
+  tanggalBayar  DateTime @map("tanggal_bayar") @db.Date
+  keterangan    String?
+  createdBy     String   @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  loan        Loan            @relation(fields: [loanId], references: [id])
+  installment LoanInstallment @relation(fields: [installmentId], references: [id])
+  creator     User            @relation(fields: [createdBy], references: [id])
+
+  @@map("loan_payments")
 }
 
 model LoanInstallment {

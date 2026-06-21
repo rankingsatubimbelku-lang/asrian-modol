@@ -288,6 +288,8 @@ model Loan {
   memberId          String     @map("member_id")
   nominalPinjaman   Decimal    @map("nominal_pinjaman") @db.Decimal(15, 2)
   tenor             Int
+  // Saldo pokok yang masih berjalan — di-set saat approval, berkurang setiap pembayaran bulanan
+  sisaPokok         Decimal?   @map("sisa_pokok") @db.Decimal(15, 2)
   tujuanPinjaman    String     @map("tujuan_pinjaman")
   interestSettingId String     @map("interest_setting_id")
   status            LoanStatus @default(DRAFT)

@@ -76,7 +76,7 @@ export async function createMember(formData: FormData) {
       await tx.saving.create({ data: { memberId: member.id } })
 
       return member
-    })
+    }, { timeout: 20000 })
 
     await logActivity({
       userId: session.user.id,

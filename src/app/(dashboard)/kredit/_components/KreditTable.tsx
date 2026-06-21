@@ -13,10 +13,10 @@ type Loan = {
   id: string
   nomorPengajuan: string
   nominalPinjaman: DecimalLike
+  sisaPokok: DecimalLike | null
   tenor: number
   status: string
   tanggalPengajuan: Date | string
-  sisaPinjaman: number
   member: { namaLengkap: string; nomorAnggota: string }
   interestSetting: { persentase: DecimalLike; metode: string }
 }
@@ -41,17 +41,18 @@ export function KreditTable({ loans }: { loans: Loan[] }) {
     },
     {
       key: "sisaPinjaman", label: "Sisa Pinjaman",
-      render: (r: Loan) => (
-        r.status === "DISETUJUI" ? (
-          <span className={`font-semibold ${r.sisaPinjaman > 0 ? "text-orange-600" : "text-green-600"}`}>
-            {formatCurrency(r.sisaPinjaman)}
+      render: (r: Loan) => {
+        if (r.status !== "DISETUJUI" && r.status !== "LUNAS") {
+          return <span className="text-gray-400 text-xs">-</span>
+        }
+        const sisa = Number(r.sisaPokok ?? r.nominalPinjaman)
+        return (
+          <span className={`font-semibold ${sisa > 0 ? "text-orange-600" : "text-green-600"}`}>
+            {formatCurrency(sisa)}
           </span>
-        ) : (
-          <span className="text-gray-400 text-xs">-</span>
         )
-      ),
+      },
     },
-    { key: "tenor", label: "Tenor", render: (r: Loan) => `${r.tenor} bln` },
     {
       key: "bunga", label: "Bunga",
       render: (r: Loan) => `${r.interestSetting.persentase}% (${r.interestSetting.metode})`,

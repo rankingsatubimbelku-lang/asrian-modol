@@ -16,6 +16,7 @@ const variants: Record<string, string> = {
   DITOLAK: "bg-red-100 text-red-700",
   // Installment
   BELUM_BAYAR: "bg-orange-100 text-orange-700",
+  SEBAGIAN: "bg-blue-100 text-blue-700",
   TERLAMBAT: "bg-red-100 text-red-700",
 }
 

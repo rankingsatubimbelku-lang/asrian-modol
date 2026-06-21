@@ -92,6 +92,7 @@ model User {
   loanSettings     LoanInterestSetting[]
   events           Event[]
   activityLogs     ActivityLog[]
+  generalTrx       GeneralTransaction[]
 
   @@map("users")
 }

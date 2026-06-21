@@ -204,7 +204,7 @@ export async function jalankanUndian(formData: FormData) {
           data: { sudahMenang: true, tanggalMenang: new Date() },
         })
       }
-    })
+    }, { timeout: 20000 })
 
     await logActivity({ userId: session.user.id, module: "arisan", action: "UNDIAN", dataBaru: { bulan: d.bulanUndian, pemenang: jml } })
     revalidatePath("/arisan/undian")

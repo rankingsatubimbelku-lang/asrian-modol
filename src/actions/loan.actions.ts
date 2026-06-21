@@ -2,13 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, resolveDbUserId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/audit"
 import { generateNomorTransaksi } from "@/lib/format"
-import { createLoanSchema, loanInterestSettingSchema, bayarAngsuranSchema } from "@/validations/loan.schema"
-import { generateJadwalAngsuran } from "@/lib/calculations/installment"
-import { hitungDenda } from "@/lib/calculations/penalty"
-import { resolveDbUserId } from "@/lib/auth-helpers"
+import { createLoanSchema, loanInterestSettingSchema, pembayaranBulananSchema } from "@/validations/loan.schema"
+import { pecahPembayaranBulanan } from "@/lib/calculations/installment"
 
 export async function saveLoanInterestSetting(formData: FormData) {
   const session = await requireAdmin()
@@ -102,10 +100,7 @@ export async function approveLoan(loanId: string, formData: FormData) {
 
   try {
     const approvedById = await resolveDbUserId(session.user.id)
-    const loan = await prisma.loan.findUnique({
-      where: { id: loanId },
-      include: { interestSetting: true },
-    })
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } })
     if (!loan) return { success: false, error: "Kredit tidak ditemukan" }
     if (loan.status !== "MENUNGGU_PERSETUJUAN") return { success: false, error: "Status tidak valid untuk approval" }
 
@@ -118,36 +113,18 @@ export async function approveLoan(loanId: string, formData: FormData) {
       return { success: true }
     }
 
-    // Generate jadwal angsuran
-    const jadwal = generateJadwalAngsuran({
-      nominalPinjaman: Number(loan.nominalPinjaman),
-      tenor: loan.tenor,
-      bungaPerTahun: Number(loan.interestSetting.persentase),
-      metode: loan.interestSetting.metode as "FLAT" | "EFEKTIF",
-      tanggalMulai: new Date(),
+    // Tidak ada generate jadwal angsuran — cukup set saldo pokok berjalan.
+    // Jumlah & tanggal pembayaran ditentukan fleksibel setiap bulan via catatPembayaranBulanan().
+    await prisma.loan.update({
+      where: { id: loanId },
+      data: {
+        status: "DISETUJUI",
+        catatanApproval: catatan,
+        approvedBy: approvedById,
+        tanggalDisetujui: new Date(),
+        sisaPokok: loan.nominalPinjaman,
+      },
     })
-
-    await prisma.$transaction([
-      prisma.loan.update({
-        where: { id: loanId },
-        data: {
-          status: "DISETUJUI",
-          catatanApproval: catatan,
-          approvedBy: approvedById,
-          tanggalDisetujui: new Date(),
-        },
-      }),
-      prisma.loanInstallment.createMany({
-        data: jadwal.map((j) => ({
-          loanId,
-          ke: j.ke,
-          tanggalJatuhTempo: j.tanggalJatuhTempo,
-          nominalPokok: j.nominalPokok,
-          nominalBunga: j.nominalBunga,
-          status: "BELUM_BAYAR",
-        })),
-      }),
-    ])
 
     await logActivity({ userId: session.user.id, module: "kredit", action: "APPROVE", entityId: loanId })
     revalidatePath("/kredit")
@@ -157,76 +134,27 @@ export async function approveLoan(loanId: string, formData: FormData) {
   }
 }
 
-export async function bayarAngsuran(formData: FormData) {
+/**
+ * Catat pembayaran angsuran bulanan — nominal bebas (fleksibel), jumlah angsuran TIDAK
+ * ditentukan di awal. Bunga tetap dihitung sesuai metode (FLAT/EFEKTIF) dari setting kredit;
+ * sisanya otomatis dialokasikan sebagai pokok dan mengurangi saldo berjalan (sisaPokok).
+ */
+export async function catatPembayaranBulanan(formData: FormData) {
   const session = await requireAdmin()
 
-  const parsed = bayarAngsuranSchema.safeParse({
-    installmentId: formData.get("installmentId"),
+  const parsed = pembayaranBulananSchema.safeParse({
+    loanId: formData.get("loanId"),
+    nominalBayar: formData.get("nominalBayar"),
     tanggalBayar: formData.get("tanggalBayar"),
+    keterangan: formData.get("keterangan"),
   })
 
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message }
 
   const d = parsed.data
+  const nominalBayar = parseFloat(d.nominalBayar)
 
-  try {
-    const angsuran = await prisma.loanInstallment.findUnique({
-      where: { id: d.installmentId },
-      include: { loan: { include: { interestSetting: true } } },
-    })
-
-    if (!angsuran) return { success: false, error: "Data angsuran tidak ditemukan" }
-    if (angsuran.status === "LUNAS") return { success: false, error: "Angsuran sudah lunas" }
-
-    const tanggalBayar = new Date(d.tanggalBayar)
-    const totalCicilan = Number(angsuran.nominalPokok) + Number(angsuran.nominalBunga)
-
-    const denda = hitungDenda({
-      nominalAngsuran: totalCicilan,
-      dendaPerHari: Number(angsuran.loan.interestSetting.dendaPerHari),
-      tanggalJatuhTempo: angsuran.tanggalJatuhTempo,
-      tanggalBayar,
-    })
-
-    await prisma.loanInstallment.update({
-      where: { id: d.installmentId },
-      data: {
-        status: "LUNAS",
-        tanggalBayar,
-        denda,
-      },
-    })
-
-    // Cek apakah semua angsuran sudah lunas
-    const belumLunas = await prisma.loanInstallment.count({
-      where: { loanId: angsuran.loanId, status: { not: "LUNAS" } },
-    })
-
-    if (belumLunas === 0) {
-      await prisma.loan.update({
-        where: { id: angsuran.loanId },
-        data: { status: "LUNAS", tanggalLunas: tanggalBayar },
-      })
-    }
-
-    await logActivity({ userId: session.user.id, module: "kredit", action: "BAYAR_ANGSURAN", entityId: d.installmentId, dataBaru: { denda } })
-    revalidatePath("/kredit")
-    return { success: true, denda }
-  } catch {
-    return { success: false, error: "Gagal mencatat pembayaran angsuran" }
-  }
-}
-
-/**
- * Pembayaran fleksibel — anggota bebas membayar berapa pun nominalnya.
- * Bunga & pokok per angsuran TETAP mengikuti jadwal awal (FLAT/EFEKTIF), tidak dihitung ulang.
- * Pembayaran dialokasikan ke angsuran TERTUA (belum lunas) lebih dulu; sisa otomatis
- * mengalir ke angsuran berikutnya. Mendukung pembayaran parsial (status SEBAGIAN).
- */
-export async function bayarAngsuranFleksibel(loanId: string, nominalBayar: number, tanggalBayar: string, keterangan?: string) {
-  const session = await requireAdmin()
-
-  if (!nominalBayar || nominalBayar <= 0) {
+  if (nominalBayar <= 0) {
     return { success: false, error: "Nominal pembayaran harus lebih dari 0" }
   }
 
@@ -234,118 +162,65 @@ export async function bayarAngsuranFleksibel(loanId: string, nominalBayar: numbe
     const createdById = await resolveDbUserId(session.user.id)
 
     const loan = await prisma.loan.findUnique({
-      where: { id: loanId },
-      include: {
-        interestSetting: true,
-        installments: { where: { status: { not: "LUNAS" } }, orderBy: { ke: "asc" } },
-      },
+      where: { id: d.loanId },
+      include: { interestSetting: true, _count: { select: { installments: true } } },
     })
     if (!loan) return { success: false, error: "Kredit tidak ditemukan" }
     if (loan.status !== "DISETUJUI") return { success: false, error: "Kredit tidak dalam status aktif" }
-    if (loan.installments.length === 0) return { success: false, error: "Semua angsuran sudah lunas" }
 
-    const tglBayar = new Date(tanggalBayar)
-    let sisaBayar = nominalBayar
+    const sisaPokokSaatIni = Number(loan.sisaPokok ?? loan.nominalPinjaman)
+    if (sisaPokokSaatIni <= 0) return { success: false, error: "Pinjaman sudah lunas" }
 
-    const instUpdates: {
-      id: string
-      nominalDibayar: number
-      status: "SEBAGIAN" | "LUNAS"
-      denda: number
-      tanggalBayar?: Date
-    }[] = []
-    const paymentRows: { installmentId: string; nominal: number }[] = []
+    const { bunga, pokok, sisaPokokBaru } = pecahPembayaranBulanan({
+      nominalBayar,
+      metode: loan.interestSetting.metode as "FLAT" | "EFEKTIF",
+      persentasePerTahun: Number(loan.interestSetting.persentase),
+      nominalPinjamanAwal: Number(loan.nominalPinjaman),
+      sisaPokok: sisaPokokSaatIni,
+    })
 
-    for (const inst of loan.installments) {
-      if (sisaBayar <= 0) break
-
-      const totalTagihanPokokBunga = Number(inst.nominalPokok) + Number(inst.nominalBunga)
-      const sudahDibayar = Number(inst.nominalDibayar)
-
-      // Denda dihitung berdasarkan tanggal jatuh tempo asli — tidak berubah oleh nominal bayar
-      const denda = tglBayar > inst.tanggalJatuhTempo
-        ? hitungDenda({
-            nominalAngsuran: totalTagihanPokokBunga,
-            dendaPerHari: Number(loan.interestSetting.dendaPerHari),
-            tanggalJatuhTempo: inst.tanggalJatuhTempo,
-            tanggalBayar: tglBayar,
-          })
-        : Number(inst.denda)
-
-      const totalTagihanInst = totalTagihanPokokBunga + denda
-      const sisaTagihanInst = totalTagihanInst - sudahDibayar
-      if (sisaTagihanInst <= 0) continue
-
-      const bayarUntukIni = Math.min(sisaBayar, sisaTagihanInst)
-      const dibayarBaru = sudahDibayar + bayarUntukIni
-      const lunas = dibayarBaru >= totalTagihanInst - 1 // toleransi rounding 1 rupiah
-
-      instUpdates.push({
-        id: inst.id,
-        nominalDibayar: dibayarBaru,
-        status: lunas ? "LUNAS" : "SEBAGIAN",
-        denda,
-        tanggalBayar: lunas ? tglBayar : undefined,
-      })
-      paymentRows.push({ installmentId: inst.id, nominal: bayarUntukIni })
-      sisaBayar -= bayarUntukIni
-    }
-
-    if (paymentRows.length === 0) {
-      return { success: false, error: "Tidak ada angsuran yang bisa dialokasikan" }
-    }
+    const tanggalBayar = new Date(d.tanggalBayar)
+    const keNext = loan._count.installments + 1
+    const lunas = sisaPokokBaru <= 0
 
     await prisma.$transaction(async (tx) => {
-      for (const u of instUpdates) {
-        await tx.loanInstallment.update({
-          where: { id: u.id },
-          data: {
-            nominalDibayar: u.nominalDibayar,
-            status: u.status,
-            denda: u.denda,
-            ...(u.tanggalBayar ? { tanggalBayar: u.tanggalBayar } : {}),
-          },
-        })
-      }
-      for (const p of paymentRows) {
-        await tx.loanPayment.create({
-          data: {
-            loanId,
-            installmentId: p.installmentId,
-            nominal: p.nominal,
-            tanggalBayar: tglBayar,
-            keterangan,
-            createdBy: createdById,
-          },
-        })
-      }
-
-      const sisaBelumLunas = await tx.loanInstallment.count({
-        where: { loanId, status: { not: "LUNAS" } },
+      await tx.loanInstallment.create({
+        data: {
+          loanId: d.loanId,
+          ke: keNext,
+          tanggalJatuhTempo: tanggalBayar,
+          tanggalBayar,
+          nominalPokok: pokok,
+          nominalBunga: bunga,
+          nominalDibayar: nominalBayar,
+          denda: 0,
+          status: "LUNAS",
+        },
       })
-      if (sisaBelumLunas === 0) {
-        await tx.loan.update({
-          where: { id: loanId },
-          data: { status: "LUNAS", tanggalLunas: tglBayar },
-        })
-      }
-    }, { timeout: 20000 }) // NeonDB cold-start bisa >5s; default timeout 5000ms tidak cukup
+
+      await tx.loan.update({
+        where: { id: d.loanId },
+        data: {
+          sisaPokok: sisaPokokBaru,
+          ...(lunas ? { status: "LUNAS", tanggalLunas: tanggalBayar } : {}),
+        },
+      })
+    }, { timeout: 20000 })
 
     await logActivity({
       userId: session.user.id,
       module: "kredit",
-      action: "BAYAR_ANGSURAN_FLEKSIBEL",
-      entityId: loanId,
-      dataBaru: { nominalBayar, dialokasikanKe: paymentRows.length, kelebihan: sisaBayar },
+      action: "BAYAR_ANGSURAN_BULANAN",
+      entityId: d.loanId,
+      dataBaru: { ke: keNext, nominalBayar, bunga, pokok, sisaPokokBaru, keterangan: d.keterangan },
     })
 
-    revalidatePath(`/kredit/${loanId}`)
+    revalidatePath(`/kredit/${d.loanId}`)
     revalidatePath("/kredit")
-    return {
-      success: true,
-      dialokasikanKe: paymentRows.length,
-      kelebihan: sisaBayar > 0 ? sisaBayar : 0,
-    }
+    revalidatePath("/kredit/angsuran")
+    revalidatePath("/kredit/laporan-bunga")
+
+    return { success: true, ke: keNext, bunga, pokok, sisaPokokBaru, lunas }
   } catch (e) {
     console.error(e)
     return { success: false, error: "Gagal mencatat pembayaran" }
@@ -356,18 +231,52 @@ export async function pelunasanAwal(loanId: string, tanggalLunas: string) {
   const session = await requireAdmin()
 
   try {
-    await prisma.loanInstallment.updateMany({
-      where: { loanId, status: "BELUM_BAYAR" },
-      data: { status: "LUNAS", tanggalBayar: new Date(tanggalLunas) },
+    const loan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      include: { interestSetting: true, _count: { select: { installments: true } } },
+    })
+    if (!loan) return { success: false, error: "Kredit tidak ditemukan" }
+    if (loan.status !== "DISETUJUI") return { success: false, error: "Kredit tidak dalam status aktif" }
+
+    const sisaPokokSaatIni = Number(loan.sisaPokok ?? loan.nominalPinjaman)
+    if (sisaPokokSaatIni <= 0) return { success: false, error: "Pinjaman sudah lunas" }
+
+    // Bunga bulan terakhir tetap dihitung sesuai metode, lalu seluruh sisa pokok dilunaskan
+    const { bunga } = pecahPembayaranBulanan({
+      nominalBayar: sisaPokokSaatIni + sisaPokokSaatIni, // pastikan bunga penuh terhitung
+      metode: loan.interestSetting.metode as "FLAT" | "EFEKTIF",
+      persentasePerTahun: Number(loan.interestSetting.persentase),
+      nominalPinjamanAwal: Number(loan.nominalPinjaman),
+      sisaPokok: sisaPokokSaatIni,
     })
 
-    await prisma.loan.update({
-      where: { id: loanId },
-      data: { status: "LUNAS", tanggalLunas: new Date(tanggalLunas) },
-    })
+    const tglLunas = new Date(tanggalLunas)
+    const keNext = loan._count.installments + 1
+
+    await prisma.$transaction(async (tx) => {
+      await tx.loanInstallment.create({
+        data: {
+          loanId,
+          ke: keNext,
+          tanggalJatuhTempo: tglLunas,
+          tanggalBayar: tglLunas,
+          nominalPokok: sisaPokokSaatIni,
+          nominalBunga: bunga,
+          nominalDibayar: sisaPokokSaatIni + bunga,
+          denda: 0,
+          status: "LUNAS",
+        },
+      })
+
+      await tx.loan.update({
+        where: { id: loanId },
+        data: { status: "LUNAS", tanggalLunas: tglLunas, sisaPokok: 0 },
+      })
+    }, { timeout: 20000 })
 
     await logActivity({ userId: session.user.id, module: "kredit", action: "PELUNASAN_AWAL", entityId: loanId })
     revalidatePath("/kredit")
+    revalidatePath(`/kredit/${loanId}`)
     return { success: true }
   } catch {
     return { success: false, error: "Gagal memproses pelunasan awal" }

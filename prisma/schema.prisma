@@ -38,6 +38,11 @@ enum SavingTransactionType {
   BUNGA
 }
 
+enum TransactionType {
+  PEMASUKAN
+  PENGELUARAN
+}
+
 enum InterestPeriode {
   BULANAN
   TAHUNAN

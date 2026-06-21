@@ -267,7 +267,7 @@ export async function simpanHasilUndian(periodId: string, bulanUndian: string, w
         where: { id: arisanMember.id },
         data: { sudahMenang: true, tanggalMenang: new Date() },
       })
-    })
+    }, { timeout: 20000 })
 
     const member = await prisma.member.findUnique({ where: { id: winnerId }, select: { namaLengkap: true } })
 

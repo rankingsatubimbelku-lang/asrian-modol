@@ -86,7 +86,7 @@ export async function createLoan(formData: FormData) {
 
     await logActivity({ userId: session.user.id, module: "kredit", action: "CREATE", entityId: loan.id })
     revalidatePath("/kredit")
-    return { success: true, data: loan }
+    return { success: true }
   } catch {
     return { success: false, error: "Gagal membuat pengajuan kredit" }
   }

@@ -330,6 +330,65 @@ async function buatJurnal({
 | `getBukuBesar(accountId, periode)` | List semua `JournalEntryLine` untuk satu akun, dengan saldo berjalan |
 | `buatJurnalPembalik(journalEntryId)` | Buat jurnal reversal (debit↔kredit dibalik) untuk koreksi |
 
+### 9.4 Endpoint audit selisih — `getAuditSelisihNeraca()`
+
+Dipanggil otomatis setiap kali halaman Neraca dibuka. Mengembalikan akar masalah, **bukan cuma angka selisih**:
+
+```typescript
+interface AuditSelisihResult {
+  totalSelisih: number
+  jurnalTidakBalance: {
+    journalEntryId: string
+    nomorJurnal: string
+    tanggal: Date
+    deskripsi: string
+    totalDebit: number
+    totalKredit: number
+    selisih: number
+  }[]
+  akunMencurigakan: {
+    accountId: string
+    kode: string
+    nama: string
+    tipe: AccountType
+    saldoSeharusnya: "DEBIT" | "KREDIT"   // sesuai tipe akun
+    saldoAktual: "DEBIT" | "KREDIT"        // hasil hitung riil
+    nominal: number
+  }[]
+}
+```
+
+**Logika deteksi (2 lapis, dijalankan berurutan):**
+
+```typescript
+async function getAuditSelisihNeraca(perTanggal: Date): Promise<AuditSelisihResult> {
+  // LAPIS 1 — Cari jurnal yang lolos validasi tapi sebenarnya tidak balance
+  // (mis. hasil migrasi manual / raw SQL / bug masa lalu sebelum buatJurnal() ada)
+  const jurnalTidakBalance = await prisma.$queryRaw`
+    SELECT je.id, je."nomor_jurnal", je.tanggal, je.deskripsi,
+           SUM(jel.debit) as total_debit, SUM(jel.kredit) as total_kredit
+    FROM journal_entries je
+    JOIN journal_entry_lines jel ON jel."journal_entry_id" = je.id
+    WHERE je.tanggal <= ${perTanggal}
+    GROUP BY je.id
+    HAVING SUM(jel.debit) <> SUM(jel.kredit)
+  `
+
+  // LAPIS 2 — Jika Lapis 1 kosong (semua jurnal individual balance) tapi Neraca
+  // TETAP tidak balance, akar masalahnya pasti di klasifikasi tipe akun yang salah.
+  // Cari akun dengan "saldo tidak normal" (red flag, bukan otomatis salah, tapi
+  // patut dicurigai lebih dulu):
+  //   - Akun ASET/BEBAN tapi saldo bersih KREDIT (seharusnya DEBIT)
+  //   - Akun KEWAJIBAN/MODAL/PENDAPATAN tapi saldo bersih DEBIT (seharusnya KREDIT)
+  const akunMencurigakan = await hitungSaldoSemuaAkun(perTanggal)
+    .filter(a => isSaldoTidakNormal(a))
+
+  return { totalSelisih, jurnalTidakBalance, akunMencurigakan }
+}
+```
+
+> 💡 **Insight kunci:** Karena setiap `buatJurnal()` SUDAH memvalidasi balance saat dibuat (BR-AKT-01), Neraca yang tidak seimbang **tidak mungkin** terjadi dari pemakaian normal sistem. Penyebabnya hanya 2: (a) ada baris jurnal yang masuk lewat jalur lain (migrasi/raw SQL/bug lama), atau (b) `tipe` akun di Chart of Accounts diubah/salah setelah transaksi berjalan di akun itu. Algoritma di atas membedakan kedua kemungkinan ini secara eksplisit, bukan cuma menampilkan "selisih Rp X".
+
 ---
 
 ## 10. LAPORAN LABA RUGI

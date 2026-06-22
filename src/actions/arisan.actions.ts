@@ -61,7 +61,7 @@ export async function createPeriode(formData: FormData) {
       dataBaru: { namaPeriode: d.namaPeriode, jumlahAnggota: aktifMembers.length },
     })
     revalidatePath("/arisan/periode")
-    return { success: true, data: periode, jumlahAnggota: aktifMembers.length }
+    return { success: true, jumlahAnggota: aktifMembers.length }
   } catch {
     return { success: false, error: "Gagal membuat periode arisan" }
   }

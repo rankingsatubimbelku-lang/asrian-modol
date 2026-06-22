@@ -122,7 +122,13 @@ export function Sidebar({ role, onClose }: SidebarProps) {
     )
   }
 
-  const filtered = navItems.filter((item) => item.roles.includes(role))
+  const filtered = navItems
+    .filter((item) => item.roles.includes(role))
+    .map((item) => ({
+      ...item,
+      children: item.children?.filter((c) => !c.roles || c.roles.includes(role)),
+    }))
+    .filter((item) => item.href || (item.children && item.children.length > 0))
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">

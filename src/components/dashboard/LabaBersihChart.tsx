@@ -40,7 +40,7 @@ export function LabaBersihChart({ data }: { data: DataPoint[] }) {
         <ReferenceLine y={0} className="stroke-gray-300 dark:stroke-white/20" />
         <Tooltip
           formatter={(value) => [`Rp ${Number(value).toLocaleString("id-ID")}`, "Laba Bersih"]}
-          labelFormatter={(v: string) => formatMonth(v)}
+          labelFormatter={(v) => formatMonth(String(v))}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
         <Line

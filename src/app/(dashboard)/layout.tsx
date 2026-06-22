@@ -28,11 +28,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Mobile sidebar (Sheet/drawer) */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar role={role} onClose={() => setMobileOpen(false)} />
-        </SheetContent>
-      </Sheet>
+      {mounted && (
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="p-0 w-64">
+            <Sidebar role={role} onClose={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Main content */}
       <div className="lg:pl-60 flex flex-col min-h-screen">

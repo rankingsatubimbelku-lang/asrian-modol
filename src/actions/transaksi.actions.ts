@@ -48,6 +48,15 @@ export async function createTransaksi(formData: FormData) {
       },
     })
 
+    await buatJurnal({
+      tanggal: trx.tanggal,
+      deskripsi: `${d.jenis === "PEMASUKAN" ? "Pemasukan" : "Pengeluaran"} — ${d.kategori} (${trx.nomorTransaksi})`,
+      sourceModule: "TRANSAKSI_UMUM",
+      sourceId: trx.id,
+      lines: jurnalLinesTransaksi(d.jenis, Number(trx.nominal)),
+      userId: createdById,
+    })
+
     await logActivity({
       userId: session.user.id,
       module: "transaksi",

@@ -228,7 +228,10 @@ export async function catatPembayaranBulanan(formData: FormData) {
       sourceModule: "KREDIT",
       sourceId: installment.id,
       lines: [
-        { kodeAkun: "1001", debit: nominalBayar },
+        // Debit Kas = bunga + pokok (jumlah yang benar-benar dialokasikan ke pinjaman),
+        // bukan nominalBayar mentah — mencegah jurnal timpang jika ada overpayment
+        // di atas sisa pokok (kasus pelunasan dengan nominal lebih besar dari tagihan).
+        { kodeAkun: "1001", debit: bunga + pokok },
         { kodeAkun: "1101", kredit: pokok },
         { kodeAkun: "4001", kredit: bunga },
       ],

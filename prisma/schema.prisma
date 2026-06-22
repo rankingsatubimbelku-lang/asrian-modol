@@ -101,6 +101,7 @@ model User {
   events           Event[]
   activityLogs     ActivityLog[]
   generalTrx       GeneralTransaction[]
+  journalEntries   JournalEntry[]
 
   @@map("users")
 }

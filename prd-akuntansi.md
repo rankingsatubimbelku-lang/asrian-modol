@@ -500,13 +500,18 @@ src/
 ├── lib/
 │   └── jurnal.ts                          # buatJurnal(), buatJurnalPembalik()
 ├── actions/
-│   └── akuntansi.actions.ts                # getLabaRugi, getNeraca, getBukuBesar
+│   └── akuntansi.actions.ts                # getLabaRugi, getNeraca, getBukuBesar,
+│                                            # getAuditSelisihNeraca (§9.4)
 ├── validations/
 │   └── akuntansi.schema.ts
 └── app/(dashboard)/akuntansi/
-    ├── buku-besar/page.tsx                 # pilih akun → tampil mutasi
+    ├── buku-besar/page.tsx                 # pilih akun → tampil mutasi; terima
+    │                                        # ?journalId= / ?accountId= dari banner audit
     ├── laba-rugi/page.tsx                  # filter periode + export PDF/Excel
-    ├── neraca/page.tsx                     # filter tanggal + export PDF/Excel
+    ├── neraca/
+    │   ├── page.tsx                        # filter tanggal + export PDF/Excel
+    │   └── _components/SelisihBanner.tsx   # banner diagnostik §11.1, hanya render
+    │                                        # jika getAuditSelisihNeraca().totalSelisih !== 0
     └── akun/page.tsx                       # CRUD Chart of Accounts
 ```
 

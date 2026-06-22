@@ -6,6 +6,13 @@ import { requireAdmin, resolveDbUserId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/audit"
 import { generateNomorTransaksi } from "@/lib/format"
 import { savingTransactionSchema, savingInterestSettingSchema } from "@/validations/saving.schema"
+import { buatJurnal } from "@/lib/jurnal"
+
+function jurnalLinesTabungan(jenis: string, nominal: number) {
+  if (jenis === "SETORAN") return [{ kodeAkun: "1001", debit: nominal }, { kodeAkun: "2001", kredit: nominal }]
+  if (jenis === "PENARIKAN") return [{ kodeAkun: "2001", debit: nominal }, { kodeAkun: "1001", kredit: nominal }]
+  return [{ kodeAkun: "5001", debit: nominal }, { kodeAkun: "2001", kredit: nominal }] // BUNGA
+}
 
 export async function inputTransaksiTabungan(formData: FormData) {
   const session = await requireAdmin()

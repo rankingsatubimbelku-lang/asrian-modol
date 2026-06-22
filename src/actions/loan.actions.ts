@@ -127,6 +127,18 @@ export async function approveLoan(loanId: string, formData: FormData) {
       },
     })
 
+    await buatJurnal({
+      tanggal: new Date(),
+      deskripsi: `Pencairan kredit — ${loan.nomorPengajuan}`,
+      sourceModule: "KREDIT",
+      sourceId: loan.id,
+      lines: [
+        { kodeAkun: "1101", debit: Number(loan.nominalPinjaman) },
+        { kodeAkun: "1001", kredit: Number(loan.nominalPinjaman) },
+      ],
+      userId: approvedById,
+    })
+
     await logActivity({ userId: session.user.id, module: "kredit", action: "APPROVE", entityId: loanId })
     revalidatePath("/kredit")
     return { success: true }

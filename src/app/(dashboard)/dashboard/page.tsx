@@ -7,6 +7,8 @@ import {
   TrendingUp, AlertCircle, CalendarDays,
 } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { getLabaBersihBulanan } from "@/actions/akuntansi.actions"
+import { LabaBersihChart } from "@/components/dashboard/LabaBersihChart"
 import Link from "next/link"
 
 function StatCard({

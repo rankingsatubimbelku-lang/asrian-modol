@@ -232,6 +232,18 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center justify-between">
+            <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-blue-500" />Laba Bersih per Bulan (12 bulan terakhir)</span>
+            <Link href="/akuntansi/laba-rugi" className="text-xs text-blue-600 font-normal hover:underline">Lihat detail</Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <LabaBersihChart data={labaBersihBulanan} />
+        </CardContent>
+      </Card>
+
       {role === "SUPER_ADMIN" && recentLogs.length > 0 && (
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4">

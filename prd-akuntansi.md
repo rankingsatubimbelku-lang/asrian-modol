@@ -438,6 +438,46 @@ Total Aset           Rp 11.300.000    Total Kewajiban+Modal Rp 11.300.000
 - ASET & BEBAN: `saldo = Σdebit − Σkredit`
 - KEWAJIBAN, MODAL, PENDAPATAN: `saldo = Σkredit − Σdebit`
 
+### 11.1 Jika Neraca Tidak Balance — Pelacakan Otomatis ke Sumber Selisih
+
+Halaman Neraca **selalu** menjalankan `getAuditSelisihNeraca()` (§9.4) di belakang layar. Jika `totalSelisih !== 0`, tampilan berubah dari laporan biasa menjadi **mode diagnostik** — admin tidak perlu menebak-nebak, sistem langsung menunjuk akar masalahnya:
+
+```
+⚠️  NERACA TIDAK BALANCE — Selisih Rp 42.000
+
+Total Aset (Rp 11.342.000) ≠ Total Kewajiban + Modal (Rp 11.300.000)
+
+┌─ Kemungkinan Penyebab #1: Jurnal Tidak Balance (1 ditemukan) ──────┐
+│                                                                     │
+│  JRN-20260615-0031 · 15 Jun 2026                                   │
+│  "Pembayaran angsuran — I Wayan Karma"                             │
+│  Debit: Rp 300.000   Kredit: Rp 258.000   Selisih: Rp 42.000      │
+│                                          [ Lihat & Perbaiki → ]    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─ Kemungkinan Penyebab #2: Akun dengan Saldo Tidak Normal ──────────┐
+│                                                                     │
+│  (Kosong jika Penyebab #1 ditemukan — biasanya hanya satu          │
+│   penyebab yang aktif dalam satu waktu)                            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Alur perbaikan ("Lihat & Perbaiki" pada jurnal bermasalah):**
+
+1. Klik baris jurnal → diarahkan ke `/akuntansi/buku-besar?journalId=JRN-20260615-0031` (bukan sekadar lihat, tapi sudah ter-highlight baris yang timpang)
+2. Halaman menampilkan detail baris debit/kredit jurnal tersebut beserta **akun COA** yang terlibat (kode + nama akun), supaya admin tahu pasti akun mana yang harus dikoreksi
+3. Admin tidak mengedit jurnal lama (BR-AKT-03) — sistem otomatis menyiapkan **draft jurnal koreksi** dengan baris yang hilang sudah terisi sebagian (selisihnya), admin hanya perlu konfirmasi akun tujuan yang benar
+4. Setelah koreksi disimpan → halaman Neraca otomatis re-fetch, banner peringatan hilang jika selisih sudah 0
+
+**Alur perbaikan (akun dengan saldo tidak normal — Penyebab #2):**
+
+1. Klik kode akun → diarahkan ke `/akuntansi/buku-besar?accountId=...` untuk melihat seluruh riwayat mutasi akun tersebut
+2. Admin & developer memeriksa apakah `tipe` akun di Chart of Accounts (`/akuntansi/akun`) sesuai dengan transaksi yang sudah tercatat — jika akun salah diklasifikasikan, kode akun **TIDAK diubah** tipenya secara langsung (karena akan mengubah retroaktif perhitungan historis), melainkan dibuatkan akun baru dengan tipe benar + jurnal pemindahan saldo
+
+> **Catatan desain:** Banner diagnostik ini **tidak menggantikan** laporan Neraca normal — ia hanya muncul kondisional saat `totalSelisih !== 0`. Pada kondisi normal (mayoritas waktu, jika §5 diimplementasikan benar), halaman Neraca tampil bersih seperti contoh di atas tanpa banner apa pun.
+
 ---
 
 ## 12. UI/UX FLOW & FOLDER STRUCTURE

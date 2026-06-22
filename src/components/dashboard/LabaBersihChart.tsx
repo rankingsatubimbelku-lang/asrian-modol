@@ -39,10 +39,7 @@ export function LabaBersihChart({ data }: { data: DataPoint[] }) {
         />
         <ReferenceLine y={0} className="stroke-gray-300 dark:stroke-white/20" />
         <Tooltip
-          formatter={(value: number, name: string) => [
-            `Rp ${value.toLocaleString("id-ID")}`,
-            name === "labaBersih" ? "Laba Bersih" : name === "pendapatan" ? "Pendapatan" : "Beban",
-          ]}
+          formatter={(value: number | string) => [`Rp ${Number(value).toLocaleString("id-ID")}`, "Laba Bersih"]}
           labelFormatter={(v: string) => formatMonth(v)}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />

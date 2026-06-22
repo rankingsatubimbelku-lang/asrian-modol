@@ -489,8 +489,8 @@ Total Aset (Rp 11.342.000) ≠ Total Kewajiban + Modal (Rp 11.300.000)
 💰 Akuntansi  (SUPER_ADMIN, ADMIN)
    ├── Buku Besar         /akuntansi/buku-besar
    ├── Laba Rugi          /akuntansi/laba-rugi
-   ├── Neraca             /akuntansi/neraca
-   └── Daftar Akun        /akuntansi/akun       (SUPER_ADMIN only)
+   ├── Neraca             /akuntansi/neraca        (banner audit selisih otomatis, lihat §11.1)
+   └── Daftar Akun        /akuntansi/akun           (SUPER_ADMIN only)
 ```
 
 ### 12.2 Folder Structure (mengikuti konvensi project yang sudah ada)

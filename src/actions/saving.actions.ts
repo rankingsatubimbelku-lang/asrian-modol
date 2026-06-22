@@ -180,7 +180,7 @@ export async function postingTabungan(savingId: string) {
     const postedById = await resolveDbUserId(session.user.id)
     const pending = await prisma.savingsTransaction.findMany({
       where: { savingId, isPosted: false },
-      select: { id: true },
+      select: { id: true, jenis: true, nominal: true, tanggal: true, nomorTransaksi: true },
     })
 
     if (pending.length === 0) {
@@ -192,6 +192,17 @@ export async function postingTabungan(savingId: string) {
       where: { savingId, isPosted: false },
       data: { isPosted: true, postedAt: now, postedBy: postedById },
     })
+
+    for (const trx of pending) {
+      await buatJurnal({
+        tanggal: trx.tanggal,
+        deskripsi: `${trx.jenis} tabungan — ${trx.nomorTransaksi}`,
+        sourceModule: "TABUNGAN",
+        sourceId: trx.id,
+        lines: jurnalLinesTabungan(trx.jenis, Number(trx.nominal)),
+        userId: postedById,
+      })
+    }
 
     await logActivity({
       userId: session.user.id,

@@ -113,6 +113,49 @@ export async function getLabaRugi(dari: Date, sampai: Date) {
   }
 }
 
+// Tren laba bersih per bulan untuk grafik dashboard — N bulan terakhir termasuk bulan ini.
+export async function getLabaBersihBulanan(jumlahBulan = 12) {
+  await requireAdmin()
+
+  const sejak = new Date()
+  sejak.setMonth(sejak.getMonth() - (jumlahBulan - 1))
+  sejak.setDate(1)
+  sejak.setHours(0, 0, 0, 0)
+
+  const rows = await prisma.$queryRaw<
+    { bulan: string; tipe: string; total_debit: string; total_kredit: string }[]
+  >`
+    SELECT to_char(je.tanggal, 'YYYY-MM') as bulan, a.tipe,
+           SUM(jel.debit) as total_debit, SUM(jel.kredit) as total_kredit
+    FROM journal_entry_lines jel
+    JOIN journal_entries je ON jel."journal_entry_id" = je.id
+    JOIN accounts a ON jel."account_id" = a.id
+    WHERE a.tipe IN ('PENDAPATAN', 'BEBAN') AND je.tanggal >= ${sejak}
+    GROUP BY bulan, a.tipe
+  `
+
+  const perBulan = new Map<string, { pendapatan: number; beban: number }>()
+  for (const r of rows) {
+    const entry = perBulan.get(r.bulan) ?? { pendapatan: 0, beban: 0 }
+    const debit = Number(r.total_debit)
+    const kredit = Number(r.total_kredit)
+    if (r.tipe === "PENDAPATAN") entry.pendapatan += kredit - debit
+    else entry.beban += debit - kredit
+    perBulan.set(r.bulan, entry)
+  }
+
+  const hasil = []
+  const cursor = new Date(sejak)
+  for (let i = 0; i < jumlahBulan; i++) {
+    const key = cursor.toISOString().slice(0, 7)
+    const data = perBulan.get(key) ?? { pendapatan: 0, beban: 0 }
+    hasil.push({ bulan: key, pendapatan: data.pendapatan, beban: data.beban, labaBersih: data.pendapatan - data.beban })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+
+  return hasil
+}
+
 // ==================== LAPORAN NERACA ====================
 
 export async function getNeraca(perTanggal: Date) {

@@ -13,7 +13,7 @@ type NavItem = {
   label: string
   href?: string
   icon: React.ReactNode
-  children?: { label: string; href: string }[]
+  children?: { label: string; href: string; roles?: string[] }[]
   roles: string[]
 }
 

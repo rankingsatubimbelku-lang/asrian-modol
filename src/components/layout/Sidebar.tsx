@@ -83,6 +83,17 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    label: "Akuntansi",
+    icon: <BookText className="w-5 h-5" />,
+    roles: ["SUPER_ADMIN", "ADMIN"],
+    children: [
+      { label: "Buku Besar", href: "/akuntansi/buku-besar" },
+      { label: "Laba Rugi", href: "/akuntansi/laba-rugi" },
+      { label: "Neraca", href: "/akuntansi/neraca" },
+      { label: "Daftar Akun", href: "/akuntansi/akun" },
+    ],
+  },
+  {
     label: "Pengaturan",
     icon: <Settings className="w-5 h-5" />,
     roles: ["SUPER_ADMIN", "ADMIN"],

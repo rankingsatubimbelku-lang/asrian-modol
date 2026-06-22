@@ -92,7 +92,12 @@ export async function updateTransaksi(id: string, formData: FormData) {
       module: "transaksi",
       action: "UPDATE",
       entityId: id,
-      dataLama: existing as never,
+      dataLama: {
+        jenis: existing.jenis,
+        kategori: existing.kategori,
+        nominal: String(existing.nominal),
+        tanggal: existing.tanggal.toISOString(),
+      },
     })
 
     revalidatePath("/transaksi")

@@ -84,15 +84,16 @@ const navItems: NavItem[] = [
   },
   {
     // Buku Besar, Neraca & Daftar Akun dibatasi SUPER_ADMIN (BR-AKT-06, prd-akuntansi.md §6) —
-    // tidak ditampilkan ke ADMIN agar tidak ada link yang redirect karena akses ditolak server.
+    // ADMIN hanya bisa lihat Laba Rugi (ringkas), child lain diberi roles spesifik agar tidak
+    // ditampilkan ke ADMIN (mencegah link yang redirect karena akses ditolak server).
     label: "Akuntansi",
     icon: <BookText className="w-5 h-5" />,
-    roles: ["SUPER_ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN"],
     children: [
-      { label: "Buku Besar", href: "/akuntansi/buku-besar" },
+      { label: "Buku Besar", href: "/akuntansi/buku-besar", roles: ["SUPER_ADMIN"] },
       { label: "Laba Rugi", href: "/akuntansi/laba-rugi" },
-      { label: "Neraca", href: "/akuntansi/neraca" },
-      { label: "Daftar Akun", href: "/akuntansi/akun" },
+      { label: "Neraca", href: "/akuntansi/neraca", roles: ["SUPER_ADMIN"] },
+      { label: "Daftar Akun", href: "/akuntansi/akun", roles: ["SUPER_ADMIN"] },
     ],
   },
   {

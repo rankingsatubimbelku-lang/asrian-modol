@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/audit"
 import { generateNomorTransaksi } from "@/lib/format"
 import { createLoanSchema, loanInterestSettingSchema, pembayaranBulananSchema } from "@/validations/loan.schema"
 import { pecahPembayaranBulanan } from "@/lib/calculations/installment"
+import { buatJurnal } from "@/lib/jurnal"
 
 export async function saveLoanInterestSetting(formData: FormData) {
   const session = await requireAdmin()

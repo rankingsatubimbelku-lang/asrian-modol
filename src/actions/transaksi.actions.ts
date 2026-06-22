@@ -6,6 +6,12 @@ import { requireAdmin, resolveDbUserId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/audit"
 import { generateNomorTransaksi } from "@/lib/format"
 import { createTransaksiSchema } from "@/validations/transaksi.schema"
+import { buatJurnal, buatJurnalPembalik } from "@/lib/jurnal"
+
+function jurnalLinesTransaksi(jenis: string, nominal: number) {
+  if (jenis === "PEMASUKAN") return [{ kodeAkun: "1001", debit: nominal }, { kodeAkun: "4003", kredit: nominal }]
+  return [{ kodeAkun: "5002", debit: nominal }, { kodeAkun: "1001", kredit: nominal }] // PENGELUARAN
+}
 
 export async function createTransaksi(formData: FormData) {
   const session = await requireAdmin()

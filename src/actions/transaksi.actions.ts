@@ -91,16 +91,37 @@ export async function updateTransaksi(id: string, formData: FormData) {
     const existing = await prisma.generalTransaction.findUnique({ where: { id } })
     if (!existing) return { success: false, error: "Transaksi tidak ditemukan" }
 
-    await prisma.generalTransaction.update({
+    const updatedById = await resolveDbUserId(session.user.id)
+    const nominalBaru = parseFloat(d.nominal)
+    const tanggalBaru = new Date(d.tanggal)
+
+    const updated = await prisma.generalTransaction.update({
       where: { id },
       data: {
         jenis: d.jenis,
         kategori: d.kategori,
-        nominal: parseFloat(d.nominal),
-        tanggal: new Date(d.tanggal),
+        nominal: nominalBaru,
+        tanggal: tanggalBaru,
         keterangan: d.keterangan,
       },
     })
+
+    // Jurnal lama tidak diedit (BR-AKT-03) — dibalik, lalu dibuat jurnal baru
+    // dengan sourceId unik (revisi) agar tetap tercatat sebagai koreksi yang jelas.
+    const jurnalLama = await prisma.journalEntry.findUnique({
+      where: { sourceModule_sourceId_isReversal: { sourceModule: "TRANSAKSI_UMUM", sourceId: id, isReversal: false } },
+    })
+    if (jurnalLama) {
+      await buatJurnalPembalik(jurnalLama.id, updatedById)
+      await buatJurnal({
+        tanggal: tanggalBaru,
+        deskripsi: `Koreksi transaksi — ${d.kategori} (${updated.nomorTransaksi})`,
+        sourceModule: "TRANSAKSI_UMUM",
+        sourceId: `${id}-koreksi-${Date.now()}`,
+        lines: jurnalLinesTransaksi(d.jenis, nominalBaru),
+        userId: updatedById,
+      })
+    }
 
     await logActivity({
       userId: session.user.id,

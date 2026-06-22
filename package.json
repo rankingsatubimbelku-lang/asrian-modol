@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:kredit": "tsx prisma/seed-kredit.ts",
+    "db:seed:akuntansi": "tsx prisma/seed-akuntansi.ts",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "prisma migrate deploy",
     "db:push": "prisma db push",

@@ -194,8 +194,10 @@ export async function catatPembayaranBulanan(formData: FormData) {
     const keNext = loan._count.installments + 1
     const lunas = sisaPokokBaru <= 0
 
-    await prisma.$transaction(async (tx) => {
-      await tx.loanInstallment.create({
+    const createdById = await resolveDbUserId(session.user.id)
+
+    const installment = await prisma.$transaction(async (tx) => {
+      const inst = await tx.loanInstallment.create({
         data: {
           loanId: d.loanId,
           ke: keNext,
@@ -216,7 +218,22 @@ export async function catatPembayaranBulanan(formData: FormData) {
           ...(lunas ? { status: "LUNAS", tanggalLunas: tanggalBayar } : {}),
         },
       })
+
+      return inst
     }, { timeout: 20000 })
+
+    await buatJurnal({
+      tanggal: tanggalBayar,
+      deskripsi: `Pembayaran angsuran ke-${keNext} — ${loan.nomorPengajuan}`,
+      sourceModule: "KREDIT",
+      sourceId: installment.id,
+      lines: [
+        { kodeAkun: "1001", debit: nominalBayar },
+        { kodeAkun: "1101", kredit: pokok },
+        { kodeAkun: "4001", kredit: bunga },
+      ],
+      userId: createdById,
+    })
 
     await logActivity({
       userId: session.user.id,

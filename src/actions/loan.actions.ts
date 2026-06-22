@@ -283,9 +283,10 @@ export async function pelunasanAwal(loanId: string, tanggalLunas: string) {
 
     const tglLunas = new Date(tanggalLunas)
     const keNext = loan._count.installments + 1
+    const approvedById = await resolveDbUserId(session.user.id)
 
-    await prisma.$transaction(async (tx) => {
-      await tx.loanInstallment.create({
+    const installment = await prisma.$transaction(async (tx) => {
+      const inst = await tx.loanInstallment.create({
         data: {
           loanId,
           ke: keNext,
@@ -303,7 +304,22 @@ export async function pelunasanAwal(loanId: string, tanggalLunas: string) {
         where: { id: loanId },
         data: { status: "LUNAS", tanggalLunas: tglLunas, sisaPokok: 0 },
       })
+
+      return inst
     }, { timeout: 20000 })
+
+    await buatJurnal({
+      tanggal: tglLunas,
+      deskripsi: `Pelunasan awal kredit — ${loan.nomorPengajuan}`,
+      sourceModule: "KREDIT",
+      sourceId: installment.id,
+      lines: [
+        { kodeAkun: "1001", debit: sisaPokokSaatIni + bunga },
+        { kodeAkun: "1101", kredit: sisaPokokSaatIni },
+        { kodeAkun: "4001", kredit: bunga },
+      ],
+      userId: approvedById,
+    })
 
     await logActivity({ userId: session.user.id, module: "kredit", action: "PELUNASAN_AWAL", entityId: loanId })
     revalidatePath("/kredit")

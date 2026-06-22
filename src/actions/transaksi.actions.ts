@@ -51,7 +51,7 @@ export async function createTransaksi(formData: FormData) {
     })
 
     revalidatePath("/transaksi")
-    return { success: true, data: trx }
+    return { success: true, nomorTransaksi: trx.nomorTransaksi }
   } catch {
     return { success: false, error: "Gagal mencatat transaksi" }
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
@@ -11,6 +11,11 @@ import { Toaster } from "@/components/ui/sonner"
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const [mobileOpen, setMobileOpen] = useState(false)
+  // Sheet (drawer mobile) pakai Base UI Dialog yang memanggil useId() internal untuk
+  // atribut ARIA — render baru setelah mount agar tidak ikut dibandingkan saat hydration
+  // (drawer ini juga tidak dibutuhkan untuk first paint, hanya muncul setelah klik hamburger).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const role = session?.user?.role ?? "ANGGOTA"
   const email = session?.user?.email ?? ""

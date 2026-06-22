@@ -162,6 +162,8 @@ export default async function DashboardPage() {
     take: 5,
   })
 
+  const labaBersihBulanan = await getLabaBersihBulanan(12)
+
   return (
     <div className="space-y-5">
       <div>

@@ -168,6 +168,7 @@ Satu pembayaran dipecah otomatis (logika `pecahPembayaranBulanan` sudah ada) men
 | BR-AKT-04 | Satu transaksi sumber (`sourceModule` + `sourceId`) hanya boleh punya **satu jurnal aktif** — mencegah duplikasi jika user klik dobel |
 | BR-AKT-05 | Laporan Neraca & Laba Rugi dihitung **on-the-fly** dari jurnal (bukan cache statis) agar selalu akurat |
 | BR-AKT-06 | Hanya **SUPER_ADMIN** yang bisa lihat Buku Besar mentah & Neraca; ADMIN bisa lihat Laba Rugi ringkas |
+| BR-AKT-07 | Setiap kali halaman Neraca dibuka, sistem **wajib** menjalankan audit selisih (§9.4 & §11.1) — jika ditemukan selisih, tampilkan sumbernya (jurnal tidak balance / akun salah klasifikasi) langsung di UI, bukan hanya nominal selisih |
 
 ---
 

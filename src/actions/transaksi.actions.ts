@@ -147,6 +147,17 @@ export async function deleteTransaksi(id: string) {
   const session = await requireAdmin()
 
   try {
+    const deletedById = await resolveDbUserId(session.user.id)
+
+    // Balikkan jurnal yang terkait (jika sudah dibuat) sebelum menghapus transaksinya —
+    // jurnal asal tidak pernah dihapus (BR-AKT-03), hanya dibalik.
+    const jurnal = await prisma.journalEntry.findUnique({
+      where: { sourceModule_sourceId_isReversal: { sourceModule: "TRANSAKSI_UMUM", sourceId: id, isReversal: false } },
+    })
+    if (jurnal) {
+      await buatJurnalPembalik(jurnal.id, deletedById)
+    }
+
     await prisma.generalTransaction.delete({ where: { id } })
     await logActivity({ userId: session.user.id, module: "transaksi", action: "DELETE", entityId: id })
     revalidatePath("/transaksi")
